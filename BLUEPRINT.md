@@ -119,11 +119,12 @@ Each phase must ship a working, testable slice before the next begins. When a ph
 | 6 | Procurement & Supplier Management | Scaffolded (supplier/PO workflow, discrepancy detection, UI done; pending live verification) | [phase-6-procurement-suppliers.md](docs/phases/phase-6-procurement-suppliers.md) |
 | 7 | Prescriptions & Pharmacist Workspace | Scaffolded (intake, review, restricted-medicine gate + UI done; pending live verification) | [phase-7-prescriptions-pharmacist-workspace.md](docs/phases/phase-7-prescriptions-pharmacist-workspace.md) |
 | 8 | Patient Care Module (Clinical Services) | Scaffolded (vitals/consultations/care plans, org-wide access, pharmacist UI done; patient portal deferred to Phase 9; pending live verification) | [phase-8-patient-care-module.md](docs/phases/phase-8-patient-care-module.md) |
-| 9 | Storefront & Customer Portal | Scaffolded (customer auth, checkout, fulfilment, delivery + UI done; payment gateway deferred; pending live verification) | [phase-9-storefront-customer-portal.md](docs/phases/phase-9-storefront-customer-portal.md) |
+| 9 | Storefront & Customer Portal | Scaffolded (customer auth, checkout, fulfilment, delivery + UI done; Paystack added in Phase 14; pending live Firebase verification) | [phase-9-storefront-customer-portal.md](docs/phases/phase-9-storefront-customer-portal.md) |
 | 10 | Loyalty, Reporting & Forecasting | Scaffolded (loyalty tiers, full reporting suite, simplified forecasting + UI done; pending live verification) | [phase-10-loyalty-reporting-forecasting.md](docs/phases/phase-10-loyalty-reporting-forecasting.md) |
 | 11 | Fraud Detection, Audit & Compliance | Scaffolded (alerts, recalls, adverse reactions, audit log, NHIS scaffold + UI done; pending live verification) | [phase-11-fraud-audit-compliance.md](docs/phases/phase-11-fraud-audit-compliance.md) |
 | 12 | Hardening, Devices, Offline & Launch Prep | Scaffolded (offline POS queue, barcode UX, receipt print path, production checklist + hardening review done; pending live verification) | [phase-12-hardening-devices-offline-launch-prep.md](docs/phases/phase-12-hardening-devices-offline-launch-prep.md) |
 | 13 | SaaS Multi-Tenancy (Future) | Scaffolded (organisation status/plan, domain mapping, tenant resolver done; billing/self-service signup deferred; pending live verification) | [phase-13-saas-multi-tenancy.md](docs/phases/phase-13-saas-multi-tenancy.md) |
+| 14 | Paystack Payments & Live Readiness | Scaffolded (Paystack initialize/verify, payment metadata, storefront redirect done; Supabase migration applied live; pending Paystack test key + deployed Functions verification) | [phase-14-paystack-payments-live-readiness.md](docs/phases/phase-14-paystack-payments-live-readiness.md) |
 
 ### Phase Details
 
@@ -178,6 +179,9 @@ Full offline robustness review, device support (barcode scanner, receipt/label p
 
 **Phase 13 — SaaS Multi-Tenancy (Future)**
 Tenant isolation layer, subscription plans, System Owner portal. Only after single-org multi-branch is proven solid in production.
+
+**Phase 14 — Paystack Payments & Live Readiness**
+Paystack payment initialization/verification, customer checkout redirect, payment metadata, and deployment checklist updates.
 
 ---
 

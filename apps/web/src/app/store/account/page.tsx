@@ -1,20 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { RequireAuth } from "@/components/RequireAuth";
 import {
   listMyOrders,
   listMyAddresses,
   addCustomerAddress,
+  verifyPaystackPayment,
   type OrderRow,
   type CustomerAddressRow,
 } from "@/lib/firebase/callables";
 
 function AccountContent() {
+  const searchParams = useSearchParams();
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [addresses, setAddresses] = useState<CustomerAddressRow[]>([]);
   const [form, setForm] = useState({ label: "", addressText: "" });
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
 
   async function refresh() {
     try {
@@ -30,6 +34,22 @@ function AccountContent() {
     refresh();
   }, []);
 
+  useEffect(() => {
+    const reference = searchParams.get("reference");
+    if (!reference) return;
+
+    verifyPaystackPayment(reference)
+      .then(async (result) => {
+        setMessage(
+          result.data.providerStatus === "success"
+            ? "Payment verified."
+            : `Payment status: ${result.data.providerStatus}`
+        );
+        await refresh();
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : "Payment verification failed."));
+  }, [searchParams]);
+
   async function handleAddAddress(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
@@ -43,9 +63,10 @@ function AccountContent() {
   }
 
   return (
-    <main className="mx-auto max-w-2xl p-8">
+      <main className="mx-auto max-w-2xl p-8">
       <h1 className="mb-6 text-2xl font-semibold">My Account</h1>
       {error && <p className="mb-4 text-red-600">{error}</p>}
+      {message && <p className="mb-4 text-green-700">{message}</p>}
 
       <h2 className="mb-2 font-medium">Order history</h2>
       {orders.length === 0 ? (
@@ -65,6 +86,11 @@ function AccountContent() {
                   </li>
                 ))}
               </ul>
+              {order.payments?.map((payment) => (
+                <div key={payment.id} className="text-gray-500">
+                  Payment: {payment.paymentMethod} / {payment.status}
+                </div>
+              ))}
               {order.delivery && <div className="text-gray-500">Delivery: {order.delivery.status}</div>}
             </li>
           ))}

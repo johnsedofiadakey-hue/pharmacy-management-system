@@ -13,13 +13,20 @@ behind each item.
 - [ ] Fill in `packages/db/.env` with real Supabase credentials
 - [ ] Fill in `.firebaserc` with the real Firebase project ID
 - [ ] Fill in `apps/web/.env.local` with the real Firebase web app config
+- [ ] Fill in `functions/.env` (local/deploy-time, gitignored) with the runtime
+      `DATABASE_URL` and `PAYSTACK_SECRET_KEY`; do **not** use `DIRECT_URL` in deployed
+      Functions
 - [ ] Set `NEXT_PUBLIC_ORGANISATION_ID` for the storefront (single-org deployment — see
       Phase 9 build log on why this is a manual value, not resolved from a domain)
-- [ ] Run `pnpm db:migrate` — this generates and applies the **first ever migration**, since
-      no migration has been run against a live database at any point in this project's build
-- [ ] Run `pnpm db:seed` — populates the permission grid and default roles
+- [x] Run live Prisma migrations against Supabase
+- [x] Run `pnpm db:seed` — populates the permission grid and default roles
 - [ ] Deploy Cloud Functions: `firebase deploy --only functions`
-- [ ] Deploy Firestore rules/indexes and Storage rules: `firebase deploy --only firestore,storage`
+      - Attempted 2026-07-08: source uploaded, but every function ended in `state: FAILED`
+        because Cloud Build lacks build service-account permissions. Fix Cloud Build/Compute
+        service-account IAM, then redeploy.
+- [ ] Deploy Firestore rules/indexes and Storage rules
+      - Firestore rules/indexes deployed 2026-07-08.
+      - Storage rules blocked until Firebase Storage is initialized in the console.
 - [ ] Create the first Super Admin user and organisation manually (via Prisma Studio or a
       one-off script) — there's no self-service "create my organisation" flow yet, by design
       (this project builds *inside* one organisation, not a SaaS signup — see BLUEPRINT.md §55
@@ -29,18 +36,19 @@ behind each item.
 
 Every phase log (`docs/phases/phase-0-*.md` through `phase-13-*.md`) ends with a "How to
 verify this phase" section written specifically for this moment — this project has been built
-and reviewed entirely through static analysis, `tsc` builds, emulator load tests, and
-browser-preview redirect checks, with **zero** live-database verification at any point.
-Work through each phase's verification steps in order (they build on each other — Phase 3's
-sale flow depends on Phase 2's ledger being correct, Phase 9's checkout depends on Phase 3's
-FEFO deduction, etc.) before trusting any of it in front of a real user.
+and reviewed mostly through static analysis, `tsc` builds, emulator load tests, and
+browser-preview redirect checks. Supabase migration/seed has now been verified live, but the
+business workflows still need live Firebase Auth/Functions verification. Work through each
+phase's verification steps in order (they build on each other — Phase 3's sale flow depends on
+Phase 2's ledger being correct, Phase 9's checkout depends on Phase 3's FEFO deduction, etc.)
+before trusting any of it in front of a real user.
 
 ## Known gaps to close before real usage (not just "nice to have")
 
-- [ ] **Payment gateway** — `OrderPayment`/checkout currently default to `CASH` with no real
-      MoMo/card processor integration (Phase 9). Pick a Ghana-market gateway (Paystack,
-      Flutterwave, or direct MTN MoMo API) and wire a real `confirmOrderPayment` webhook
-      handler before accepting online prepayment.
+- [ ] **Payment gateway live verification** — Paystack initialization/verification is wired for
+      storefront orders, but a Paystack test secret key still needs to be configured in
+      Functions and a real sandbox checkout needs to be completed. Add a Paystack webhook before
+      relying on unattended payment reconciliation.
 - [ ] **Notification delivery** — staff invite links (Phase 1) and drug recall notices
       (Phase 11) are generated but never sent anywhere; the UI just displays them for manual
       copy/share. Wire an email/SMS/WhatsApp provider before relying on either workflow.

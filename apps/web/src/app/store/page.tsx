@@ -9,19 +9,20 @@ import {
   publicListBranches,
   listMyAddresses,
   placeOrder,
+  initializePaystackPayment,
   type PublicProduct,
   type PublicBranch,
   type CustomerAddressRow,
 } from "@/lib/firebase/callables";
 
 type CartLine = { productId: string; name: string; quantity: number; unitPrice: number };
+type StorePaymentMethod = "CASH" | "MOMO" | "CARD" | "BANK_TRANSFER";
 
 const ORG_ID = process.env.NEXT_PUBLIC_ORGANISATION_ID ?? "";
 
 // Phase 9 skeleton — public browsing needs no sign-in; checkout does
 // (placeOrder is customer-auth-gated), so an unauthenticated checkout
-// attempt redirects to /store/signup. Payment is "choose a method," not a
-// real MoMo/card gateway call — see the Phase 9 build log.
+// attempt redirects to /store/signup.
 export default function StorePage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -32,6 +33,7 @@ export default function StorePage() {
   const [branchId, setBranchId] = useState("");
   const [fulfilmentType, setFulfilmentType] = useState<"PICKUP" | "DELIVERY">("PICKUP");
   const [deliveryAddressId, setDeliveryAddressId] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<StorePaymentMethod>("MOMO");
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -86,9 +88,21 @@ export default function StorePage() {
         branchId,
         fulfilmentType,
         deliveryAddressId: fulfilmentType === "DELIVERY" ? deliveryAddressId : undefined,
-        paymentMethod: "CASH",
+        paymentMethod,
         items: cart.map((l) => ({ productId: l.productId, quantity: l.quantity })),
       });
+
+      if (paymentMethod !== "CASH") {
+        const paystack = await initializePaystackPayment({
+          orderId: result.data.order.id,
+          callbackUrl: `${window.location.origin}/store/account`,
+        });
+        if (paystack.data.authorizationUrl) {
+          window.location.href = paystack.data.authorizationUrl;
+          return;
+        }
+      }
+
       setMessage(`Order placed! Total GHS ${result.data.order.total}`);
       setCart([]);
     } catch (err) {
@@ -202,6 +216,17 @@ export default function StorePage() {
           </select>
         )}
 
+        <select
+          className="mb-2 w-full rounded border px-3 py-2"
+          value={paymentMethod}
+          onChange={(e) => setPaymentMethod(e.target.value as StorePaymentMethod)}
+        >
+          <option value="MOMO">Mobile money via Paystack</option>
+          <option value="CARD">Card via Paystack</option>
+          <option value="BANK_TRANSFER">Bank transfer via Paystack</option>
+          <option value="CASH">Cash on pickup/delivery</option>
+        </select>
+
         <div className="mb-3 flex justify-between font-medium">
           <span>Total</span>
           <span>GHS {total.toFixed(2)}</span>
@@ -211,7 +236,7 @@ export default function StorePage() {
           disabled={cart.length === 0 || !branchId || (fulfilmentType === "DELIVERY" && !deliveryAddressId)}
           className="w-full rounded bg-black px-4 py-2 text-white disabled:opacity-50"
         >
-          {user ? "Place order (cash on pickup/delivery)" : "Sign up to check out"}
+          {user ? "Place order" : "Sign up to check out"}
         </button>
       </div>
     </main>

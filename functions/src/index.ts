@@ -53,6 +53,8 @@ export { publicCheckBranchAvailability } from "./storefront/publicCheckBranchAva
 export { publicListBranches } from "./storefront/publicListBranches";
 export { resolveTenantByHost } from "./storefront/resolveTenantByHost";
 export { placeOrder } from "./storefront/placeOrder";
+export { initializePaystackPayment } from "./storefront/initializePaystackPayment";
+export { verifyPaystackPayment } from "./storefront/verifyPaystackPayment";
 export { listMyOrders } from "./storefront/listMyOrders";
 export { addCustomerAddress } from "./storefront/addCustomerAddress";
 export { listMyAddresses } from "./storefront/listMyAddresses";
