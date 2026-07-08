@@ -1,0 +1,18 @@
+{
+  "name": "pharmacy-os",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@10.15.0",
+  "scripts": {
+    "dev:web": "pnpm --filter web dev",
+    "build": "pnpm -r build",
+    "db:generate": "pnpm --filter @pharmacy-os/db generate",
+    "db:migrate": "pnpm --filter @pharmacy-os/db migrate",
+    "db:seed": "pnpm --filter @pharmacy-os/db seed",
+    "functions:build": "pnpm --filter functions build",
+    "functions:serve": "pnpm --filter functions serve"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

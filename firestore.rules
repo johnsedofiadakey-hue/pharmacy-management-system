@@ -1,0 +1,36 @@
+rules_version = '2';
+
+// Architecture rule (see BLUEPRINT.md §4): Postgres is the only source of truth for
+// business data. Firestore holds only caches, projections, and ephemeral real-time state,
+// written by Cloud Functions (Admin SDK, which bypasses these rules). Client writes here
+// are the exception, not the norm — only allowed where explicitly justified below
+// (e.g. the offline POS sales queue, added in Phase 3).
+//
+// Default: deny everything. Each phase adds only the collections it needs, with
+// the narrowest rule that satisfies that phase's use case.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Mirror of a user's own profile (orgId, branchIds, roles) for fast client reads
+    // without invoking a Cloud Function. Written only by Cloud Functions.
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
+    }
+
+    // Live per-branch dashboard numbers (Phase 4), refreshed by Cloud Functions after
+    // relevant mutations. Org-level isolation only — custom claims deliberately don't
+    // carry a per-branch list (token size), so this can't check branch membership
+    // directly; the app only ever requests branches the user's role list includes.
+    match /branch_live/{branchId} {
+      allow read: if request.auth != null && request.auth.token.orgId == resource.data.organisationId;
+      allow write: if false;
+    }
+
+    // Default deny for anything not explicitly listed above.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

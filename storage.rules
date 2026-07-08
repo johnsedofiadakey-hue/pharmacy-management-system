@@ -1,0 +1,13 @@
+rules_version = '2';
+
+// Default deny. Storage paths (prescriptions, receipts, product images) are added
+// starting Phase 3 (receipts) and Phase 7 (prescriptions), scoped by orgId/customerId
+// pulled from the caller's Firebase Auth custom claims.
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
