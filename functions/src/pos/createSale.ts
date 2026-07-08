@@ -7,16 +7,20 @@ import {
   TillSessionStatus,
   StockMovementType,
   PaymentMethod,
+  PrescriptionStatus,
+  PrescriptionItemAvailability,
 } from "@pharmacy-os/db";
 import { getCallerUser } from "../lib/authContext";
 import { requirePermission } from "../lib/permissions";
 import { deductStockFefo } from "../inventory/fefo";
 import { refreshBranchDashboard } from "../dashboard/refreshBranchDashboard";
+import { awardLoyaltyPoints } from "../lib/loyalty";
 
 const createSaleSchema = z.object({
   branchId: z.string().uuid(),
   tillSessionId: z.string().uuid(),
   customerPhone: z.string().optional(),
+  prescriptionId: z.string().uuid().optional(),
   items: z
     .array(
       z.object({
@@ -91,6 +95,51 @@ export const createSale = onCall(async (request) => {
     }
   }
 
+  // Restricted-medicine gate (BLUEPRINT.md §27): no cashier-only completion —
+  // every RESTRICTED line must be covered by a pharmacist-approved
+  // prescription that actually lists that product as available.
+  const restrictedItems = input.items.filter(
+    (item) => productById.get(item.productId)?.prescriptionClassification === "RESTRICTED"
+  );
+  if (restrictedItems.length > 0) {
+    if (!input.prescriptionId) {
+      throw new HttpsError(
+        "failed-precondition",
+        "This sale includes a restricted medicine and requires an approved prescription."
+      );
+    }
+
+    const prescription = await prisma.prescription.findUnique({
+      where: { id: input.prescriptionId },
+      include: { items: true },
+    });
+    if (!prescription || prescription.organisationId !== caller.organisationId || prescription.branchId !== input.branchId) {
+      throw new HttpsError("not-found", "Prescription not found at this branch.");
+    }
+    if (
+      prescription.status !== PrescriptionStatus.APPROVED &&
+      prescription.status !== PrescriptionStatus.PARTIALLY_AVAILABLE
+    ) {
+      throw new HttpsError("failed-precondition", "Prescription has not been approved by a pharmacist.");
+    }
+
+    for (const restrictedItem of restrictedItems) {
+      const covered = prescription.items.some(
+        (pi) =>
+          pi.productId === restrictedItem.productId &&
+          (pi.availabilityStatus === PrescriptionItemAvailability.AVAILABLE ||
+            pi.availabilityStatus === PrescriptionItemAvailability.PARTIALLY_AVAILABLE)
+      );
+      if (!covered) {
+        const product = productById.get(restrictedItem.productId);
+        throw new HttpsError(
+          "failed-precondition",
+          `"${product?.name}" is restricted and not covered by this approved prescription.`
+        );
+      }
+    }
+  }
+
   const subtotal = input.items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
   const discountTotal = input.items.reduce((sum, i) => sum + (i.discountAmount ?? 0), 0);
   const total = subtotal - discountTotal;
@@ -121,6 +170,7 @@ export const createSale = onCall(async (request) => {
         cashierUserId: caller.id,
         tillSessionId: input.tillSessionId,
         customerId,
+        prescriptionId: input.prescriptionId,
         subtotal,
         discountTotal,
         taxTotal: 0,
@@ -166,6 +216,17 @@ export const createSale = onCall(async (request) => {
           referenceNumber: payment.referenceNumber,
         },
       });
+    }
+
+    if (input.prescriptionId) {
+      await tx.prescription.update({
+        where: { id: input.prescriptionId },
+        data: { status: PrescriptionStatus.COMPLETED },
+      });
+    }
+
+    if (customerId) {
+      await awardLoyaltyPoints(tx, customerId, total);
     }
 
     return tx.sale.findUniqueOrThrow({

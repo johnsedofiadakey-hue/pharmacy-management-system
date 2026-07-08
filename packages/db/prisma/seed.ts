@@ -41,6 +41,8 @@ const ROLE_DEFINITIONS: { name: string; grants: Grant[] | "ALL" }[] = [
       [PermissionResource.TRANSFERS, ["VIEW", "APPROVE"]],
       [PermissionResource.RETURNS, ["VIEW", "APPROVE"]],
       [PermissionResource.BRANCHES, ["VIEW"]],
+      [PermissionResource.ORDERS, ["VIEW"]],
+      [PermissionResource.DELIVERIES, ["VIEW"]],
     ] as Grant[],
   },
   {
@@ -60,6 +62,8 @@ const ROLE_DEFINITIONS: { name: string; grants: Grant[] | "ALL" }[] = [
       [PermissionResource.TRANSFERS, ["VIEW", "APPROVE"]],
       [PermissionResource.RETURNS, ["VIEW", "APPROVE"]],
       [PermissionResource.BRANCHES, ["VIEW"]],
+      [PermissionResource.ORDERS, ["VIEW"]],
+      [PermissionResource.DELIVERIES, ["VIEW"]],
     ] as Grant[],
   },
   {
@@ -78,6 +82,8 @@ const ROLE_DEFINITIONS: { name: string; grants: Grant[] | "ALL" }[] = [
       [PermissionResource.PRICING, ["VIEW"]],
       [PermissionResource.TRANSFERS, ["VIEW", "CREATE", "EDIT", "APPROVE", "CANCEL"]],
       [PermissionResource.RETURNS, ["VIEW", "APPROVE"]],
+      [PermissionResource.ORDERS, ["VIEW", "EDIT", "APPROVE", "CANCEL"]],
+      [PermissionResource.DELIVERIES, ["VIEW", "EDIT"]],
     ] as Grant[],
   },
   {
@@ -99,7 +105,8 @@ const ROLE_DEFINITIONS: { name: string; grants: Grant[] | "ALL" }[] = [
       [PermissionResource.PRODUCTS, ["VIEW"]],
       [PermissionResource.STOCK, ["VIEW"]],
       [PermissionResource.CUSTOMERS, ["VIEW"]],
-      [PermissionResource.PRESCRIPTIONS, ["VIEW"]],
+      [PermissionResource.PRESCRIPTIONS, ["VIEW", "CREATE"]],
+      [PermissionResource.ORDERS, ["VIEW", "EDIT"]],
     ] as Grant[],
   },
   {
@@ -110,6 +117,7 @@ const ROLE_DEFINITIONS: { name: string; grants: Grant[] | "ALL" }[] = [
       [PermissionResource.STOCK, ["VIEW"]],
       [PermissionResource.CUSTOMERS, ["VIEW", "CREATE"]],
       [PermissionResource.RETURNS, ["VIEW", "CREATE"]],
+      [PermissionResource.ORDERS, ["VIEW", "EDIT"]],
     ] as Grant[],
   },
   {
@@ -157,7 +165,12 @@ const ROLE_DEFINITIONS: { name: string; grants: Grant[] | "ALL" }[] = [
   },
   {
     name: "delivery_rider",
-    grants: [[PermissionResource.CUSTOMERS, ["VIEW"]]] as Grant[],
+    // CUSTOMERS:VIEW replaced now that ORDERS/DELIVERIES exist (Phase 9) — a rider
+    // needs delivery address/contact via the order, not general customer access.
+    grants: [
+      [PermissionResource.ORDERS, ["VIEW"]],
+      [PermissionResource.DELIVERIES, ["VIEW", "EDIT"]],
+    ] as Grant[],
   },
 ];
 

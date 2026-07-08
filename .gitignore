@@ -36,3 +36,6 @@ pnpm-debug.log*
 # IDE
 .vscode/
 .idea/
+
+# Local Codex scheduling locks
+.claude/scheduled_tasks.lock

@@ -19,12 +19,15 @@ model Organisation {
   id        String   @id @default(uuid())
   name      String
   settings  Json?
+  status    OrganisationStatus @default(ACTIVE)
+  plan      OrganisationPlan   @default(STARTER)
   createdAt DateTime @default(now())
 
   branches   Branch[]
   warehouses Warehouse[]
   users      User[]
   roles      Role[]
+  domains    OrganisationDomain[]
 
   categories     Category[]
   products       Product[]
@@ -35,8 +38,44 @@ model Organisation {
   stockTransfers StockTransfer[]
   suppliers      Supplier[]
   purchaseOrders PurchaseOrder[]
+  prescriptions  Prescription[]
+  orders         Order[]
+  drugRecalls    DrugRecall[]
+  adverseReactionReports AdverseReactionReport[]
+  auditLogs      AuditLog[]
+  nhisClaims     NhisClaim[]
 
   @@map("organisations")
+}
+
+enum OrganisationStatus {
+  ACTIVE
+  SUSPENDED
+  CANCELLED
+}
+
+enum OrganisationPlan {
+  STARTER
+  GROWTH
+  ENTERPRISE
+}
+
+// Phase 13 SaaS scaffold: maps storefront/admin hostnames to the organisation
+// whose public catalogue they should resolve to. This does not add self-service
+// signup or billing yet; it replaces Phase 9's manual NEXT_PUBLIC_ORGANISATION_ID
+// with a real tenant-resolution path when the deployment is ready.
+model OrganisationDomain {
+  id             String       @id @default(uuid())
+  organisationId String
+  organisation   Organisation @relation(fields: [organisationId], references: [id])
+
+  hostname  String  @unique
+  isPrimary Boolean @default(false)
+  isActive  Boolean @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([organisationId, isActive])
+  @@map("organisation_domains")
 }
 
 model Branch {
@@ -83,6 +122,12 @@ model Branch {
   transfersFrom  StockTransfer[] @relation("TransferFromBranch")
   transfersTo    StockTransfer[] @relation("TransferToBranch")
   purchaseOrders PurchaseOrder[]
+  prescriptions  Prescription[]
+  patientVitals  PatientVital[]
+  consultations  Consultation[]
+  orders         Order[]
+  customersPreferring Customer[]
+  auditLogs      AuditLog[]
 
   @@unique([organisationId, code])
   @@map("branches")
@@ -135,6 +180,14 @@ model User {
   transfersApproved          StockTransfer[] @relation("TransferApprovedBy")
   purchaseOrdersCreated      PurchaseOrder[] @relation("PurchaseOrderCreatedBy")
   purchaseOrdersApproved     PurchaseOrder[] @relation("PurchaseOrderApprovedBy")
+  prescriptionsReviewed      Prescription[] @relation("PrescriptionReviewedBy")
+  patientVitalsRecorded      PatientVital[]
+  consultationsAsPharmacist  Consultation[]
+  carePlansCreated           CarePlan[]
+  deliveriesAsRider          Delivery[]
+  drugRecallsInitiated       DrugRecall[] @relation("DrugRecallInitiatedBy")
+  adverseReactionsReported   AdverseReactionReport[] @relation("AdverseReactionReportedBy")
+  auditLogs                  AuditLog[]
 
   @@map("users")
 }
@@ -173,6 +226,8 @@ enum PermissionResource {
   SETTINGS
   PATIENTS
   CARE_PLANS
+  ORDERS
+  DELIVERIES
 }
 
 enum PermissionAction {
@@ -300,6 +355,9 @@ model Product {
   batches   Batch[]
   saleItems SaleItem[]
   purchaseOrderItems PurchaseOrderItem[]
+  prescriptionItems PrescriptionItem[]
+  orderItems OrderItem[]
+  adverseReactionReports AdverseReactionReport[]
 
   @@unique([organisationId, barcode])
   @@map("products")
@@ -321,11 +379,20 @@ model Batch {
   purchaseOrderId String?
   purchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
 
+  // Denormalized on purpose — checked synchronously in deductStockFefo's hot
+  // path on every sale/order, not derived from DrugRecall on every read. The
+  // DrugRecall model below is the audit history (reason/who/when); this
+  // field is just "is this batch currently blocked from sale."
+  recallStatus BatchRecallStatus @default(NONE)
+
   branchStock    BranchStock[]
   stockMovements StockMovement[]
   saleItems      SaleItem[]
   stockAdjustmentRequests StockAdjustmentRequest[]
   stockTransferItems StockTransferItem[]
+  orderItems OrderItem[]
+  drugRecalls DrugRecall[]
+  adverseReactionReports AdverseReactionReport[]
 
   @@unique([productId, batchNumber])
   @@map("batches")
@@ -394,14 +461,26 @@ model StockMovement {
   referenceId   String?
   reason        String?
 
-  performedByUserId String
-  performedBy       User    @relation("StockMovementPerformedBy", fields: [performedByUserId], references: [id])
+  // Exactly one of these two is set — a movement is either staff-performed
+  // (POS sale, receiving, adjustment, transfer) or customer-initiated (an
+  // online order placed directly through placeOrder, Phase 9). Both are
+  // nullable rather than picking one required FK, because neither User nor
+  // Customer is the universal "who did this" answer for every movement type.
+  performedByUserId String?
+  performedBy       User?     @relation("StockMovementPerformedBy", fields: [performedByUserId], references: [id])
+  performedByCustomerId String?
+  performedByCustomer   Customer? @relation("StockMovementPerformedByCustomer", fields: [performedByCustomerId], references: [id])
   approvedByUserId  String?
   approvedBy        User?   @relation("StockMovementApprovedBy", fields: [approvedByUserId], references: [id])
   approvalStatus    ApprovalStatus @default(NOT_REQUIRED)
 
   createdAt DateTime @default(now())
 
+  // Every report in Phase 10-11 filters by branch + a date range (or by
+  // batch, for recall impact lookups) — these are the two hot paths once
+  // this table has real volume.
+  @@index([branchId, createdAt])
+  @@index([batchId])
   @@map("stock_movements")
 }
 
@@ -410,6 +489,17 @@ model StockMovement {
 // counter (BLUEPRINT.md §28-29). Phase 8 (patient care) and Phase 9
 // (storefront/loyalty) extend this same table rather than creating a
 // separate one, per BLUEPRINT.md §28: "every Patient is a Customer."
+
+// Thresholds are a placeholder policy (see computeLoyaltyTier in
+// functions/src/lib/loyalty.ts) — no real usage data exists yet to calibrate
+// against, same category of "reasonable default, revisit later" as Phase 4's
+// adjustment-sensitivity threshold.
+enum LoyaltyTier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+}
 
 model Customer {
   id             String  @id @default(uuid())
@@ -422,7 +512,23 @@ model Customer {
   isPatient Boolean  @default(false)
   createdAt DateTime @default(now())
 
+  // Nullable — set by linkCustomerAccount only once this customer registers
+  // for the online portal; a phone-only counter customer never gets one.
+  firebaseUid       String? @unique
+  loyaltyPoints     Int     @default(0)
+  loyaltyTier       LoyaltyTier @default(BRONZE)
+  preferredBranchId String?
+  preferredBranch   Branch? @relation(fields: [preferredBranchId], references: [id])
+  nhisNumber        String?
+
   sales Sale[]
+  prescriptions Prescription[]
+  patientProfile PatientProfile?
+  addresses CustomerAddress[]
+  orders    Order[]
+  stockMovementsPerformed StockMovement[] @relation("StockMovementPerformedByCustomer")
+  adverseReactionReports AdverseReactionReport[]
+  nhisClaims NhisClaim[]
 
   @@unique([organisationId, phone])
   @@map("customers")
@@ -477,6 +583,8 @@ model Sale {
   tillSession    TillSession @relation(fields: [tillSessionId], references: [id])
   customerId     String?
   customer       Customer? @relation(fields: [customerId], references: [id])
+  prescriptionId String?
+  prescription   Prescription? @relation(fields: [prescriptionId], references: [id])
 
   status        SaleStatus @default(COMPLETED)
   subtotal      Decimal    @db.Decimal(12, 2)
@@ -488,7 +596,9 @@ model Sale {
 
   items    SaleItem[]
   payments SalePayment[]
+  nhisClaims NhisClaim[]
 
+  @@index([branchId, status, createdAt])
   @@map("sales")
 }
 
@@ -510,6 +620,9 @@ model SaleItem {
   discountAmount  Decimal @db.Decimal(12, 2) @default(0)
   lineTotal       Decimal @db.Decimal(12, 2)
 
+  // getProfitabilityReport/getBranchBenchmarking join through batchId to get
+  // costPriceAtReceipt; getRecallImpactReport filters by batchId directly.
+  @@index([batchId])
   @@map("sale_items")
 }
 
@@ -713,4 +826,434 @@ model PurchaseOrderItem {
   unitCost         Decimal @db.Decimal(12, 2)
 
   @@map("purchase_order_items")
+}
+
+// ---------- Prescriptions & Pharmacist Review (Phase 7) ----------
+
+enum PrescriptionStatus {
+  RECEIVED
+  UNDER_REVIEW
+  CLARIFICATION_REQUIRED
+  APPROVED
+  PARTIALLY_AVAILABLE
+  READY_FOR_PAYMENT
+  PREPARING
+  READY_FOR_COLLECTION
+  COMPLETED
+  REJECTED
+}
+
+enum PrescriptionItemAvailability {
+  PENDING
+  AVAILABLE
+  PARTIALLY_AVAILABLE
+  UNAVAILABLE
+}
+
+model Prescription {
+  id             String  @id @default(uuid())
+  organisationId String
+  organisation   Organisation @relation(fields: [organisationId], references: [id])
+  branchId       String
+  branch         Branch  @relation(fields: [branchId], references: [id])
+  customerId     String
+  customer       Customer @relation(fields: [customerId], references: [id])
+
+  uploadedFileUrl String?
+  status          PrescriptionStatus @default(RECEIVED)
+
+  reviewedByPharmacistId String?
+  reviewedByPharmacist   User?     @relation("PrescriptionReviewedBy", fields: [reviewedByPharmacistId], references: [id])
+  reviewedAt             DateTime?
+
+  createdAt DateTime @default(now())
+
+  items PrescriptionItem[]
+  sales Sale[]
+  orders Order[]
+
+  @@map("prescriptions")
+}
+
+// productId is null until a pharmacist matches (or substitutes) it during
+// review — see reviewPrescription.ts. The pharmacist's choice of a different
+// product than requestedText IS the substitution decision (BLUEPRINT.md §13);
+// there's no separate "substitution request" entity, since the review action
+// itself is already pharmacist-gated and logged via Prescription's
+// reviewedByPharmacistId/reviewedAt.
+model PrescriptionItem {
+  id             String       @id @default(uuid())
+  prescriptionId String
+  prescription   Prescription @relation(fields: [prescriptionId], references: [id])
+
+  requestedText String
+  quantity      Int
+  productId     String?
+  product       Product? @relation(fields: [productId], references: [id])
+  availabilityStatus PrescriptionItemAvailability @default(PENDING)
+  note          String?
+
+  @@map("prescription_items")
+}
+
+// ---------- Patient Care Module (Phase 8) ----------
+// Clinical records are org-wide, not branch-scoped (confirmed product
+// decision: continuity of care across branches matters more than branch data
+// isolation for this data — see BLUEPRINT.md §5/§6 account directory).
+// recordedByBranchId/branchId fields below are for attribution/audit only,
+// never used as an access filter — see requirePermissionAnyBranch in
+// functions/src/lib/permissions.ts, which every function in this domain uses
+// instead of the usual branch-scoped requirePermission.
+
+model PatientProfile {
+  id         String   @id @default(uuid())
+  customerId String   @unique
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  allergies           Json?
+  chronicConditions   Json?
+  consentClinicalData Boolean   @default(false)
+  consentDate         DateTime?
+  createdAt           DateTime  @default(now())
+
+  vitals        PatientVital[]
+  consultations Consultation[]
+  carePlans     CarePlan[]
+
+  @@map("patient_profiles")
+}
+
+model PatientVital {
+  id               String         @id @default(uuid())
+  patientProfileId String
+  patientProfile   PatientProfile @relation(fields: [patientProfileId], references: [id])
+
+  recordedAt         DateTime @default(now())
+  recordedByBranchId String
+  recordedByBranch   Branch   @relation(fields: [recordedByBranchId], references: [id])
+  recordedByUserId   String
+  recordedByUser     User     @relation(fields: [recordedByUserId], references: [id])
+
+  bpSystolic    Int?
+  bpDiastolic   Int?
+  glucoseLevel  Decimal? @db.Decimal(6, 2)
+  weightKg      Decimal? @db.Decimal(6, 2)
+  heightCm      Decimal? @db.Decimal(6, 2)
+  other         Json?
+
+  @@map("patient_vitals")
+}
+
+model Consultation {
+  id               String         @id @default(uuid())
+  patientProfileId String
+  patientProfile   PatientProfile @relation(fields: [patientProfileId], references: [id])
+  pharmacistUserId String
+  pharmacist       User           @relation(fields: [pharmacistUserId], references: [id])
+  branchId         String
+  branch           Branch         @relation(fields: [branchId], references: [id])
+
+  consultationDate DateTime @default(now())
+  reason           String
+  notes            String?
+  outcome          String?
+  referredToDoctor Boolean  @default(false)
+
+  @@map("consultations")
+}
+
+enum CarePlanStatus {
+  ACTIVE
+  COMPLETED
+  DISCONTINUED
+}
+
+model CarePlan {
+  id                    String         @id @default(uuid())
+  patientProfileId      String
+  patientProfile        PatientProfile @relation(fields: [patientProfileId], references: [id])
+  createdByPharmacistId String
+  createdByPharmacist   User           @relation(fields: [createdByPharmacistId], references: [id])
+
+  condition String
+  goals     String?
+  status    CarePlanStatus @default(ACTIVE)
+  createdAt DateTime       @default(now())
+
+  followups CarePlanFollowup[]
+
+  @@map("care_plans")
+}
+
+enum FollowupStatus {
+  DUE
+  COMPLETED
+  MISSED
+}
+
+model CarePlanFollowup {
+  id         String   @id @default(uuid())
+  carePlanId String
+  carePlan   CarePlan @relation(fields: [carePlanId], references: [id])
+
+  scheduledDate DateTime
+  status        FollowupStatus @default(DUE)
+  completedAt   DateTime?
+  notes         String?
+
+  @@map("care_plan_followups")
+}
+
+// ---------- Storefront, Orders & Delivery (Phase 9) ----------
+// Customer.firebaseUid is nullable: a Customer can exist purely from a POS
+// phone-number lookup (BLUEPRINT.md §29) without ever registering for the
+// online portal. Registering later just fills in this field on the same row
+// via linkCustomerAccount — never a second Customer record.
+
+model CustomerAddress {
+  id         String   @id @default(uuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  label       String
+  addressText String
+  gpsLat      Float?
+  gpsLng      Float?
+  createdAt   DateTime @default(now())
+
+  orders Order[]
+
+  @@map("customer_addresses")
+}
+
+enum FulfilmentType {
+  PICKUP
+  DELIVERY
+}
+
+// Simplified from the blueprint's full New/Confirmed/Prescription Review/
+// Picking/Pharmacist Check/Ready/Out for Delivery/Delivered list only in that
+// PRESCRIPTION_REVIEW and PHARMACIST_CHECK are collapsed into reusing the
+// existing Prescription workflow (Phase 7) rather than duplicating pharmacist
+// sign-off as separate order-status bookkeeping — an order's prescriptionId
+// links to a Prescription whose own status already tracks that review.
+enum OrderStatus {
+  NEW
+  CONFIRMED
+  PICKING
+  READY
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+model Order {
+  id             String  @id @default(uuid())
+  organisationId String
+  organisation   Organisation @relation(fields: [organisationId], references: [id])
+  branchId       String
+  branch         Branch  @relation(fields: [branchId], references: [id])
+  customerId     String
+  customer       Customer @relation(fields: [customerId], references: [id])
+
+  status          OrderStatus    @default(NEW)
+  fulfilmentType  FulfilmentType
+  deliveryAddressId String?
+  deliveryAddress   CustomerAddress? @relation(fields: [deliveryAddressId], references: [id])
+  prescriptionId  String?
+  prescription    Prescription?  @relation(fields: [prescriptionId], references: [id])
+
+  subtotal      Decimal @db.Decimal(12, 2)
+  discountTotal Decimal @db.Decimal(12, 2) @default(0)
+  total         Decimal @db.Decimal(12, 2)
+
+  createdAt DateTime @default(now())
+
+  items    OrderItem[]
+  payments OrderPayment[]
+  delivery Delivery?
+
+  @@index([branchId, status, createdAt])
+  @@map("orders")
+}
+
+// One row per batch actually deducted, same reasoning as SaleItem (Phase 3) —
+// FEFO deduction at order placement (see Decisions in the Phase 9 build log)
+// may split one requested product/quantity across batches.
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id])
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  batchId   String
+  batch     Batch   @relation(fields: [batchId], references: [id])
+
+  quantity  Int
+  unitPrice Decimal @db.Decimal(12, 2)
+  lineTotal Decimal @db.Decimal(12, 2)
+
+  @@map("order_items")
+}
+
+enum OrderPaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+// providerReference is where a real MoMo/card gateway's transaction ID would
+// go once one is integrated (see Phase 9 build log Decisions) — no gateway
+// call happens yet, so this starts PENDING and is confirmed manually.
+model OrderPayment {
+  id      String @id @default(uuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id])
+
+  paymentMethod     PaymentMethod
+  amount            Decimal            @db.Decimal(12, 2)
+  status            OrderPaymentStatus @default(PENDING)
+  providerReference String?
+  createdAt         DateTime           @default(now())
+
+  @@map("order_payments")
+}
+
+enum DeliveryStatus {
+  UNASSIGNED
+  ASSIGNED
+  OUT_FOR_DELIVERY
+  DELIVERED
+  FAILED
+}
+
+model Delivery {
+  id      String @id @default(uuid())
+  orderId String @unique
+  order   Order  @relation(fields: [orderId], references: [id])
+
+  riderId String?
+  rider   User?   @relation(fields: [riderId], references: [id])
+  status  DeliveryStatus @default(UNASSIGNED)
+
+  assignedAt  DateTime?
+  deliveredAt DateTime?
+
+  @@map("deliveries")
+}
+
+// ---------- Fraud Detection, Audit & Compliance (Phase 11) ----------
+
+enum BatchRecallStatus {
+  NONE
+  RECALLED
+  RESOLVED
+}
+
+enum RecallStatus {
+  ACTIVE
+  RESOLVED
+}
+
+// BLUEPRINT.md §42: block further sale, identify affected customers, notify
+// branches. "Block further sale" is Batch.recallStatus checked in
+// deductStockFefo; "identify affected customers" is answered by querying
+// SaleItem/OrderItem for this batchId (no separate denormalized list needed —
+// the existing sale/order records already are that list). "Notify branches"
+// isn't built — no notification delivery mechanism exists yet in this
+// project (same gap as Phase 1's invite emails), so this only makes the
+// recall visible to anyone who queries it, not push-notified.
+model DrugRecall {
+  id             String  @id @default(uuid())
+  organisationId String
+  organisation   Organisation @relation(fields: [organisationId], references: [id])
+  batchId        String
+  batch          Batch   @relation(fields: [batchId], references: [id])
+
+  reason            String
+  status            RecallStatus @default(ACTIVE)
+  initiatedByUserId String
+  initiatedBy       User    @relation("DrugRecallInitiatedBy", fields: [initiatedByUserId], references: [id])
+  resolvedAt        DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@map("drug_recalls")
+}
+
+// BLUEPRINT.md §43 — captured for future structured regulatory reporting,
+// not submitted anywhere automatically (no regulator API exists to submit to).
+model AdverseReactionReport {
+  id             String  @id @default(uuid())
+  organisationId String
+  organisation   Organisation @relation(fields: [organisationId], references: [id])
+  productId      String
+  product        Product @relation(fields: [productId], references: [id])
+  batchId        String?
+  batch          Batch?  @relation(fields: [batchId], references: [id])
+  customerId     String?
+  customer       Customer? @relation(fields: [customerId], references: [id])
+
+  reactionDescription String
+  dateOfReaction      DateTime?
+  outcome             String?
+  reportedByUserId    String
+  reportedBy          User    @relation("AdverseReactionReportedBy", fields: [reportedByUserId], references: [id])
+  createdAt           DateTime @default(now())
+
+  @@map("adverse_reaction_reports")
+}
+
+// A general-purpose log for sensitive actions BLUEPRINT.md §53 calls out
+// specifically (price changes, role changes, branch deactivation, adjustment
+// approvals, recalls) — NOT a retrofit of every one of this project's ~70
+// Cloud Functions. See the Phase 11 build log for which actions call
+// recordAuditLog and why those were chosen over an exhaustive retrofit.
+model AuditLog {
+  id             String  @id @default(uuid())
+  organisationId String
+  organisation   Organisation @relation(fields: [organisationId], references: [id])
+  branchId       String?
+  branch         Branch? @relation(fields: [branchId], references: [id])
+  userId         String?
+  user           User?   @relation(fields: [userId], references: [id])
+
+  action       String
+  resourceType String
+  resourceId   String?
+  oldValue     Json?
+  newValue     Json?
+  createdAt    DateTime @default(now())
+
+  @@map("audit_log")
+}
+
+enum NhisClaimStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+// BLUEPRINT.md §44 — explicitly "scaffolding" for future e-claims
+// integration, not a real submission pipeline. No NHIS API exists to submit
+// to or validate against; this only records the claim's existence and lets
+// status be tracked manually once an integration is chosen.
+model NhisClaim {
+  id             String  @id @default(uuid())
+  organisationId String
+  organisation   Organisation @relation(fields: [organisationId], references: [id])
+  customerId     String
+  customer       Customer @relation(fields: [customerId], references: [id])
+  saleId         String?
+  sale           Sale?    @relation(fields: [saleId], references: [id])
+
+  nhisNumber       String
+  status           NhisClaimStatus @default(DRAFT)
+  rejectionReason  String?
+  submittedAt      DateTime?
+  createdAt        DateTime @default(now())
+
+  @@map("nhis_claims")
 }

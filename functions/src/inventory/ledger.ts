@@ -22,7 +22,12 @@ export async function applyStockMovement(
     batchId: string;
     quantityDelta: number;
     movementType: StockMovementType;
-    performedByUserId: string;
+    // Exactly one of these two — see the schema comment on StockMovement.
+    // Staff-initiated movements (POS, receiving, adjustments, transfers) set
+    // performedByUserId; customer-initiated ones (an online order,
+    // placeOrder.ts) set performedByCustomerId instead.
+    performedByUserId?: string;
+    performedByCustomerId?: string;
     approvedByUserId?: string | null;
     approvalStatus?: ApprovalStatus;
     reason?: string;
@@ -30,6 +35,13 @@ export async function applyStockMovement(
     referenceId?: string;
   }
 ) {
+  if (!params.performedByUserId && !params.performedByCustomerId) {
+    throw new HttpsError(
+      "invalid-argument",
+      "A stock movement must have either performedByUserId or performedByCustomerId."
+    );
+  }
+
   const branchStock = await tx.branchStock.upsert({
     where: { branchId_batchId: { branchId: params.branchId, batchId: params.batchId } },
     create: {
@@ -70,6 +82,7 @@ export async function applyStockMovement(
       referenceType: params.referenceType,
       referenceId: params.referenceId,
       performedByUserId: params.performedByUserId,
+      performedByCustomerId: params.performedByCustomerId,
       approvedByUserId: params.approvedByUserId ?? undefined,
       approvalStatus: params.approvalStatus ?? ApprovalStatus.NOT_REQUIRED,
     },

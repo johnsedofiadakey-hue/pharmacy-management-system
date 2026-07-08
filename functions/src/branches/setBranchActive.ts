@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma, PermissionResource, PermissionAction } from "@pharmacy-os/db";
 import { getCallerUser } from "../lib/authContext";
 import { requirePermission } from "../lib/permissions";
+import { recordAuditLog } from "../lib/auditLog";
 
 const setBranchActiveSchema = z.object({
   branchId: z.string().uuid(),
@@ -39,6 +40,17 @@ export const setBranchActive = onCall(async (request) => {
   const updated = await prisma.branch.update({
     where: { id: branchId },
     data: { isActive },
+  });
+
+  await recordAuditLog(prisma, {
+    organisationId: caller.organisationId,
+    branchId,
+    userId: caller.id,
+    action: isActive ? "BRANCH_REACTIVATED" : "BRANCH_DEACTIVATED",
+    resourceType: "Branch",
+    resourceId: branchId,
+    oldValue: { isActive: branch.isActive },
+    newValue: { isActive },
   });
 
   return { branch: updated };

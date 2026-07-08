@@ -1,18 +1,27 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getCompanyDashboard, type CompanyDashboard } from "@/lib/firebase/callables";
+import {
+  getCompanyDashboard,
+  getBranchBenchmarking,
+  type CompanyDashboard,
+  type BranchBenchmarking,
+} from "@/lib/firebase/callables";
 
 // Super Admin command centre — computed on demand (not a live Firestore
 // projection like the branch dashboard, see getCompanyDashboard.ts for why).
 export default function CompanyDashboardPage() {
   const [data, setData] = useState<CompanyDashboard | null>(null);
+  const [benchmarking, setBenchmarking] = useState<BranchBenchmarking | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     getCompanyDashboard()
       .then((r) => setData(r.data))
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load dashboard."));
+    getBranchBenchmarking()
+      .then((r) => setBenchmarking(r.data))
+      .catch(() => undefined);
   }, []);
 
   return (
@@ -76,6 +85,36 @@ export default function CompanyDashboardPage() {
               <div className="font-semibold">GHS {data.expiryRisk.within180Days.toFixed(2)}</div>
             </div>
           </div>
+
+          {benchmarking && (
+            <>
+              <h2 className="mb-3 mt-6 font-medium">
+                Branch benchmarking (last {benchmarking.windowDays} days)
+              </h2>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-gray-500">
+                    <th className="pb-2">Branch</th>
+                    <th className="pb-2">Sales</th>
+                    <th className="pb-2">Margin</th>
+                    <th className="pb-2">Stock loss</th>
+                    <th className="pb-2">Expiry loss</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {benchmarking.benchmarking.map((b) => (
+                    <tr key={b.branchId} className="border-t">
+                      <td className="py-2">{b.branchName}</td>
+                      <td className="py-2">GHS {b.sales.toFixed(2)}</td>
+                      <td className="py-2">{b.grossMarginPercent.toFixed(1)}%</td>
+                      <td className="py-2">GHS {b.stockLossValue.toFixed(2)}</td>
+                      <td className="py-2">GHS {b.expiryLossValue.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
         </>
       )}
     </main>

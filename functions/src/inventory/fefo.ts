@@ -1,5 +1,5 @@
 import { HttpsError } from "firebase-functions/v2/https";
-import { Prisma, StockMovementType } from "@pharmacy-os/db";
+import { Prisma, StockMovementType, BatchRecallStatus } from "@pharmacy-os/db";
 import { applyStockMovement } from "./ledger";
 
 type TxClient = Prisma.TransactionClient;
@@ -21,7 +21,8 @@ export async function deductStockFefo(
     productId: string;
     quantity: number;
     movementType: StockMovementType;
-    performedByUserId: string;
+    performedByUserId?: string;
+    performedByCustomerId?: string;
     referenceType?: string;
     referenceId?: string;
     reason?: string;
@@ -31,8 +32,16 @@ export async function deductStockFefo(
     throw new HttpsError("invalid-argument", "Quantity must be positive.");
   }
 
+  // RECALLED batches are excluded entirely — BLUEPRINT.md §42 "block further
+  // sale." A batch marked RESOLVED after a recall is lifted is sellable
+  // again, same as NONE.
   const availableStock = await tx.branchStock.findMany({
-    where: { branchId: params.branchId, productId: params.productId, quantityOnHand: { gt: 0 } },
+    where: {
+      branchId: params.branchId,
+      productId: params.productId,
+      quantityOnHand: { gt: 0 },
+      batch: { recallStatus: { not: BatchRecallStatus.RECALLED } },
+    },
     include: { batch: true },
     orderBy: { batch: { expiryDate: { sort: "asc", nulls: "last" } } },
   });
@@ -52,6 +61,7 @@ export async function deductStockFefo(
       quantityDelta: -deduct,
       movementType: params.movementType,
       performedByUserId: params.performedByUserId,
+      performedByCustomerId: params.performedByCustomerId,
       referenceType: params.referenceType,
       referenceId: params.referenceId,
       reason: params.reason,

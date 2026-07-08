@@ -4,6 +4,7 @@ import { prisma, PermissionResource, PermissionAction } from "@pharmacy-os/db";
 import { getCallerUser } from "../lib/authContext";
 import { requirePermission } from "../lib/permissions";
 import { computeAndSyncClaims } from "../auth/claims";
+import { recordAuditLog } from "../lib/auditLog";
 
 const assignUserRoleSchema = z.object({
   targetUserId: z.string().uuid(),
@@ -68,6 +69,16 @@ export const assignUserRole = onCall(async (request) => {
   });
 
   await computeAndSyncClaims(targetUserId);
+
+  await recordAuditLog(prisma, {
+    organisationId: caller.organisationId,
+    branchId,
+    userId: caller.id,
+    action: "ROLE_ASSIGNED",
+    resourceType: "User",
+    resourceId: targetUserId,
+    newValue: { roleId, branchId },
+  });
 
   return { userRole };
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   listBranches,
   listProducts,
@@ -10,14 +10,23 @@ import {
   type Branch,
   type Product,
   type TillSession,
+  type Sale,
 } from "@/lib/firebase/callables";
+import {
+  getQueuedSales,
+  queueSale,
+  removeQueuedSale,
+  isNetworkError,
+  type QueuedSale,
+} from "@/lib/offlineSalesQueue";
+import { Receipt } from "@/components/Receipt";
 
 type CartLine = { productId: string; name: string; quantity: number; unitPrice: number };
 
-// Phase 3 skeleton — branch is manually selected rather than auto-detected
-// from the cashier's assigned branch (that needs the Firestore mirror-doc
-// read, a follow-up). Not yet exercisable end-to-end without a real
-// Firebase/Supabase project (see phase build logs).
+// Phase 3 skeleton, hardened in Phase 12 — branch is manually selected rather
+// than auto-detected from the cashier's assigned branch (that needs the
+// Firestore mirror-doc read, a follow-up). Not yet exercisable end-to-end
+// without a real Firebase/Supabase project (see phase build logs).
 export default function PosPage() {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -30,6 +39,10 @@ export default function PosPage() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [queuedCount, setQueuedCount] = useState(0);
+  const [isOnline, setIsOnline] = useState(true);
+  const [lastSale, setLastSale] = useState<Sale | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     (async () => {
@@ -42,6 +55,54 @@ export default function PosPage() {
       }
     })();
   }, []);
+
+  // Barcode scanners act as fast keyboard input — keep the search box
+  // focused by default so a scan lands there without the cashier clicking
+  // first (BLUEPRINT.md §51).
+  useEffect(() => {
+    searchInputRef.current?.focus();
+  }, [tillSession]);
+
+  useEffect(() => {
+    setIsOnline(navigator.onLine);
+    setQueuedCount(getQueuedSales().length);
+
+    function handleOnline() {
+      setIsOnline(true);
+      drainQueue();
+    }
+    function handleOffline() {
+      setIsOnline(false);
+    }
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    drainQueue();
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function drainQueue() {
+    const queue = getQueuedSales();
+    for (const item of queue) {
+      try {
+        await createSale(item.payload);
+        removeQueuedSale(item.localId);
+      } catch (err) {
+        if (!isNetworkError(err)) {
+          // A queued sale that now fails for a business reason (e.g. stock
+          // changed while offline) — drop it rather than retry forever;
+          // the cashier already moved on and this needs human review, not
+          // a silent infinite retry.
+          removeQueuedSale(item.localId);
+        }
+        break;
+      }
+    }
+    setQueuedCount(getQueuedSales().length);
+  }
 
   const filteredProducts = useMemo(() => {
     if (!search) return products;
@@ -71,6 +132,17 @@ export default function PosPage() {
         },
       ];
     });
+  }
+
+  // A scanner types the barcode then sends Enter — if it's an exact barcode
+  // match, add it straight to the cart instead of leaving it in the search box.
+  function handleSearchKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== "Enter") return;
+    const exactMatch = products.find((p) => p.barcode && p.barcode === search.trim());
+    if (exactMatch) {
+      addToCart(exactMatch);
+      setSearch("");
+    }
   }
 
   async function handleOpenTill() {
@@ -107,32 +179,68 @@ export default function PosPage() {
     setError(null);
     setMessage(null);
     setBusy(true);
+
+    const saleInput = {
+      branchId,
+      tillSessionId: tillSession.id,
+      items: cart.map((line) => ({
+        productId: line.productId,
+        quantity: line.quantity,
+        unitPrice: line.unitPrice,
+      })),
+      payments: [{ paymentMethod: "CASH" as const, amount: total }],
+    };
+
+    if (!navigator.onLine) {
+      queueSale(saleInput);
+      setQueuedCount(getQueuedSales().length);
+      setMessage("Offline — sale queued and will sync automatically once back online.");
+      setCart([]);
+      setBusy(false);
+      return;
+    }
+
     try {
-      const result = await createSale({
-        branchId,
-        tillSessionId: tillSession.id,
-        items: cart.map((line) => ({
-          productId: line.productId,
-          quantity: line.quantity,
-          unitPrice: line.unitPrice,
-        })),
-        payments: [{ paymentMethod: "CASH", amount: total }],
-      });
+      const result = await createSale(saleInput);
       setMessage(`Sale completed: GHS ${result.data.sale.total}`);
+      setLastSale(result.data.sale);
       setCart([]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Checkout failed.");
+      if (isNetworkError(err)) {
+        queueSale(saleInput);
+        setQueuedCount(getQueuedSales().length);
+        setMessage("Network unreachable — sale queued and will sync automatically.");
+        setCart([]);
+      } else {
+        setError(err instanceof Error ? err.message : "Checkout failed.");
+      }
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <main className="mx-auto max-w-3xl p-8">
-      <h1 className="mb-6 text-2xl font-semibold">POS</h1>
+    <>
+    <main className="mx-auto max-w-3xl p-8 print:hidden">
+      <div className="mb-4 flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">POS</h1>
+        <div className="flex items-center gap-2 text-sm">
+          {!isOnline && <span className="rounded bg-yellow-100 px-2 py-1 text-yellow-800">Offline</span>}
+          {queuedCount > 0 && (
+            <span className="rounded bg-blue-100 px-2 py-1 text-blue-800">
+              {queuedCount} sale{queuedCount > 1 ? "s" : ""} queued
+            </span>
+          )}
+        </div>
+      </div>
 
       {error && <p className="mb-4 text-red-600">{error}</p>}
       {message && <p className="mb-4 text-green-700">{message}</p>}
+      {lastSale && (
+        <button onClick={() => window.print()} className="mb-4 rounded border px-3 py-1 text-sm">
+          Print last receipt
+        </button>
+      )}
 
       <div className="mb-6 flex flex-wrap items-center gap-3 rounded-lg border p-4">
         <select
@@ -190,10 +298,12 @@ export default function PosPage() {
       {tillSession && (
         <>
           <input
-            placeholder="Search product name or barcode..."
+            ref={searchInputRef}
+            placeholder="Scan barcode or search product name..."
             className="mb-3 w-full rounded border px-3 py-2"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
           />
           <ul className="mb-6 grid grid-cols-2 gap-2">
             {filteredProducts.map((product) => (
@@ -240,5 +350,7 @@ export default function PosPage() {
         </>
       )}
     </main>
+    {lastSale && <Receipt sale={lastSale} />}
+    </>
   );
 }

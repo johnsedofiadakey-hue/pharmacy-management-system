@@ -5,6 +5,7 @@ import { getCallerUser } from "../lib/authContext";
 import { requirePermission } from "../lib/permissions";
 import { applyStockMovement } from "./ledger";
 import { refreshBranchDashboard } from "../dashboard/refreshBranchDashboard";
+import { recordAuditLog } from "../lib/auditLog";
 
 const reviewSchema = z.object({
   requestId: z.string().uuid(),
@@ -48,6 +49,14 @@ export const reviewStockAdjustmentRequest = onCall(async (request) => {
         note: note ?? adjustmentRequest.note,
       },
     });
+    await recordAuditLog(prisma, {
+      organisationId: caller.organisationId,
+      branchId: adjustmentRequest.branchId,
+      userId: caller.id,
+      action: "STOCK_ADJUSTMENT_REJECTED",
+      resourceType: "StockAdjustmentRequest",
+      resourceId: requestId,
+    });
     return { stockAdjustmentRequest: updated };
   }
 
@@ -65,7 +74,7 @@ export const reviewStockAdjustmentRequest = onCall(async (request) => {
       reason: adjustmentRequest.note ?? undefined,
     });
 
-    return tx.stockAdjustmentRequest.update({
+    const result = await tx.stockAdjustmentRequest.update({
       where: { id: requestId },
       data: {
         status: ApprovalStatus.APPROVED,
@@ -73,6 +82,18 @@ export const reviewStockAdjustmentRequest = onCall(async (request) => {
         reviewedAt: new Date(),
       },
     });
+
+    await recordAuditLog(tx, {
+      organisationId: adjustmentRequest.organisationId,
+      branchId: adjustmentRequest.branchId,
+      userId: caller.id,
+      action: "STOCK_ADJUSTMENT_APPROVED",
+      resourceType: "StockAdjustmentRequest",
+      resourceId: requestId,
+      newValue: { quantityDelta: adjustmentRequest.quantityDelta, movementType: adjustmentRequest.movementType },
+    });
+
+    return result;
   });
 
   await refreshBranchDashboard(adjustmentRequest.branchId);
