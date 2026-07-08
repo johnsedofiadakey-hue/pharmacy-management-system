@@ -9,11 +9,8 @@
     "build": "tsc",
     "migrate": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
-    "seed": "prisma db seed",
+    "seed": "prisma db execute --file prisma/system_seed.sql --schema prisma/schema.prisma",
     "studio": "prisma studio"
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.2.1"
