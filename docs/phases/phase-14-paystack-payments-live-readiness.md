@@ -1,6 +1,9 @@
 # Phase 14 — Paystack Payments & Live Readiness
 
-**Status:** Scaffolded and built — Supabase migration applied live; Firestore rules deployed; Functions blocked in `FAILED` state by Google Cloud Build service-account IAM; pending Paystack secret key and real Paystack test checkout
+**Status:** Scaffolded and built — Supabase migration applied live; Firestore rules deployed;
+all ~85 Cloud Functions deployed live as of 2026-07-08 (see "Live deployment blockers" below
+for the two real bugs this surfaced and how they were fixed); pending Paystack secret key,
+real Paystack test checkout, and Firebase Storage initialization
 **Date:** 2026-07-08
 **Corresponds to:** Production hardening after BLUEPRINT.md Phase 13
 
@@ -67,9 +70,40 @@ Turn Phase 9 checkout from manual payment selection into a real online payment p
 
 ## Live deployment blockers
 - `firebase deploy --only storage` failed because Firebase Storage has not been set up in the console yet.
+  **Resolved 2026-07-08:** initialized the default bucket (`gs://nexuspharmasystem.firebasestorage.app`,
+  regional/no-cost US-EAST1, production/deny-by-default mode) via the Firebase console
+  "Get started" wizard, then ran `firebase deploy --only storage` successfully.
 - `firebase deploy --only functions` uploaded source and loaded `functions/.env`, but every function ended in `state: FAILED`. The deploy error was:
   `Could not build the function due to a missing permission on the build service account.`
 - Google documents this as a Cloud Build service-account permission issue; the build service account needs access to read the source bucket and read/write Artifact Registry, commonly by granting the default Compute Service Account `roles/cloudbuild.builds.builder` or using a custom build service account.
+
+### Resolved 2026-07-08
+- **IAM fix:** granted `roles/cloudbuild.builds.builder` to
+  `618493796419-compute@developer.gserviceaccount.com` (the default Compute Engine service
+  account) in the `nexuspharmasystem` GCP project via IAM & Admin. This is exactly the fix
+  Google's own docs describe for this error.
+- **That unblocked the build but revealed a second, real bug:** Cloud Build runs a plain
+  `npm install` on the uploaded `functions/` source — it has no knowledge of pnpm workspaces,
+  so `"@pharmacy-os/db": "workspace:*"` in `functions/package.json` failed with
+  `npm error code EUNSUPPORTEDPROTOCOL npm error Unsupported URL Type "workspace:": workspace:*`.
+  Fixed by:
+  1. Adding `functions/scripts/vendor-db.js`, which copies the built `packages/db/dist` and
+     `packages/db/generated` into `functions/vendor/pharmacy-os-db` (with a minimal
+     standalone `package.json`) — a self-contained copy that plain npm can install without
+     needing the rest of the monorepo.
+  2. Changing the dependency to `"@pharmacy-os/db": "file:./vendor/pharmacy-os-db"`, which
+     both pnpm (locally, via symlink) and plain npm (remotely, via copy) understand.
+  3. Wiring `vendor-db` into `firebase.json`'s `predeploy` array, ahead of the existing
+     `tsc` build step, so the vendor copy is always fresh before a deploy.
+  4. Adding `functions/vendor/` to `.gitignore` (it's a regenerated build artifact, same
+     treatment as `dist/`/`packages/db/generated/`).
+- **Also fixed a latent runtime bug that hadn't surfaced yet:** the Prisma `generator client`
+  block in `packages/db/prisma/schema.prisma` had no `binaryTargets`, so it only generated a
+  macOS (`darwin-arm64`) query engine. That would have shipped fine but crashed at runtime
+  on the Ubuntu-based Cloud Functions Node 20 image with a missing-engine error. Added
+  `debian-openssl-3.0.x` alongside `native` and regenerated.
+- All ~85 functions redeployed successfully; `firebase functions:list` confirms `v2` /
+  `nodejs20` / `us-central1` for each with no `FAILED` states.
 
 ## How to verify this phase live
 1. Fix Firebase Storage setup in the console, then deploy Storage rules.

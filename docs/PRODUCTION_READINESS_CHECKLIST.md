@@ -20,17 +20,51 @@ behind each item.
       Phase 9 build log on why this is a manual value, not resolved from a domain)
 - [x] Run live Prisma migrations against Supabase
 - [x] Run `pnpm db:seed` — populates the permission grid and default roles
-- [ ] Deploy Cloud Functions: `firebase deploy --only functions`
-      - Attempted 2026-07-08: source uploaded, but every function ended in `state: FAILED`
-        because Cloud Build lacks build service-account permissions. Fix Cloud Build/Compute
-        service-account IAM, then redeploy.
-- [ ] Deploy Firestore rules/indexes and Storage rules
+- [x] Deploy Cloud Functions: `firebase deploy --only functions`
+      - Fixed 2026-07-08: granted `roles/cloudbuild.builds.builder` to the Compute Engine
+        default service account (`618493796419-compute@developer.gserviceaccount.com`) —
+        Google's documented fix for the `state: FAILED` / "missing permission on the build
+        service account" error.
+      - That unblocked the build but exposed a real bug: Cloud Build runs plain `npm install`
+        remotely and doesn't understand pnpm's `workspace:*` protocol, so
+        `@pharmacy-os/db: workspace:*` failed with `npm error code EUNSUPPORTEDPROTOCOL`.
+        Fixed by vendoring a self-contained copy of the built `@pharmacy-os/db` package into
+        `functions/vendor/pharmacy-os-db` (via `functions/scripts/vendor-db.js`, run as a
+        `predeploy` step in `firebase.json`) and depending on it via `file:./vendor/pharmacy-os-db`,
+        which plain npm resolves natively.
+      - Also added `debian-openssl-3.0.x` to the Prisma `binaryTargets` in
+        `packages/db/prisma/schema.prisma` (alongside `native`) — the generated client only
+        shipped a macOS query engine before, which would have failed at runtime on the
+        Ubuntu-based Cloud Functions Node 20 image even once the build succeeded.
+      - All ~85 functions deployed successfully on 2026-07-08 (`firebase functions:list`
+        confirms `v2`/`nodejs20`/`us-central1` for each).
+- [x] Deploy Firestore rules/indexes and Storage rules
       - Firestore rules/indexes deployed 2026-07-08.
-      - Storage rules blocked until Firebase Storage is initialized in the console.
-- [ ] Create the first Super Admin user and organisation manually (via Prisma Studio or a
+      - Storage initialized 2026-07-08 via the Firebase console "Get started" wizard
+        (default bucket `gs://nexuspharmasystem.firebasestorage.app`, regional/no-cost
+        location US-EAST1, started in production/deny-by-default mode). `storage.rules`
+        deployed immediately after with `firebase deploy --only storage`.
+- [x] Create the first Super Admin user and organisation manually (via Prisma Studio or a
       one-off script) — there's no self-service "create my organisation" flow yet, by design
       (this project builds *inside* one organisation, not a SaaS signup — see BLUEPRINT.md §55
       and Phase 13)
+      - Done 2026-07-08: Firebase Authentication had never been initialized either (same
+        "Get started" gap as Storage) — enabled it and turned on the Email/Password sign-in
+        provider.
+      - Discovered the Cloud Functions runtime service account
+        (`618493796419-compute@developer.gserviceaccount.com`) also had zero Firebase Admin
+        permissions beyond the earlier Cloud Build grant — every deployed function that calls
+        `auth.createUser`/`setCustomUserClaims`/Firestore admin writes would have failed at
+        runtime. Granted `roles/firebaseauth.admin` and `roles/datastore.user`.
+      - Added a temporary, self-guarding `bootstrapSuperAdmin` callable (refuses to run once
+        the target organisation has any user), invoked it once for `johnsedofiadakey@gmail.com`
+        / Nexus Pharma, confirmed the `User` + `UserRole(super_admin)` rows and custom claims
+        were created correctly, then deleted the function from the deployment.
+      - Verified live: `/login` in the actual web app round-trips to
+        `identitytoolkit.googleapis.com` against the real `nexuspharmasystem` project and
+        correctly rejects a wrong password for the real account (`auth/invalid-credential`),
+        confirming the account and wiring are live. The account owner still needs to set their
+        password via the generated Firebase password-reset link before signing in for real.
 
 ## Live end-to-end verification (do this before anything else below)
 
@@ -49,6 +83,13 @@ before trusting any of it in front of a real user.
       storefront orders, but a Paystack test secret key still needs to be configured in
       Functions and a real sandbox checkout needs to be completed. Add a Paystack webhook before
       relying on unattended payment reconciliation.
+      - Deliberately deferred 2026-07-09: getting the `sk_test_...` key requires signing into
+        the Paystack dashboard, which needs the account owner — not something an agent can do.
+        Once you have the key, drop it into `functions/.env` as `PAYSTACK_SECRET_KEY` and
+        redeploy (`firebase deploy --only functions`), then place a real storefront order with
+        Mobile Money/Card/Bank Transfer to confirm the full round trip (see
+        docs/phases/phase-14-paystack-payments-live-readiness.md "How to verify this phase
+        live").
 - [ ] **Notification delivery** — staff invite links (Phase 1) and drug recall notices
       (Phase 11) are generated but never sent anywhere; the UI just displays them for manual
       copy/share. Wire an email/SMS/WhatsApp provider before relying on either workflow.

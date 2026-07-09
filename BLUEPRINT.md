@@ -124,7 +124,7 @@ Each phase must ship a working, testable slice before the next begins. When a ph
 | 11 | Fraud Detection, Audit & Compliance | Scaffolded (alerts, recalls, adverse reactions, audit log, NHIS scaffold + UI done; pending live verification) | [phase-11-fraud-audit-compliance.md](docs/phases/phase-11-fraud-audit-compliance.md) |
 | 12 | Hardening, Devices, Offline & Launch Prep | Scaffolded (offline POS queue, barcode UX, receipt print path, production checklist + hardening review done; pending live verification) | [phase-12-hardening-devices-offline-launch-prep.md](docs/phases/phase-12-hardening-devices-offline-launch-prep.md) |
 | 13 | SaaS Multi-Tenancy (Future) | Scaffolded (organisation status/plan, domain mapping, tenant resolver done; billing/self-service signup deferred; pending live verification) | [phase-13-saas-multi-tenancy.md](docs/phases/phase-13-saas-multi-tenancy.md) |
-| 14 | Paystack Payments & Live Readiness | Scaffolded (Paystack initialize/verify, payment metadata, storefront redirect done; Supabase migration applied live; pending Paystack test key + deployed Functions verification) | [phase-14-paystack-payments-live-readiness.md](docs/phases/phase-14-paystack-payments-live-readiness.md) |
+| 14 | Paystack Payments & Live Readiness | Live (Cloud Functions, Firestore, Storage, Auth all deployed/enabled on `nexuspharmasystem`; first Super Admin created for Nexus Pharma and login verified live; pending only a Paystack test key, deliberately deferred to the account owner) | [phase-14-paystack-payments-live-readiness.md](docs/phases/phase-14-paystack-payments-live-readiness.md) |
 
 ### Phase Details
 

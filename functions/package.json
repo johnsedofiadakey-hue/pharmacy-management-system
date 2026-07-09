@@ -7,6 +7,7 @@
   },
   "main": "lib/index.js",
   "scripts": {
+    "vendor-db": "node scripts/vendor-db.js",
     "build": "tsc",
     "build:watch": "tsc --watch",
     "serve": "npm run build && firebase emulators:start --only functions,auth,firestore,storage",
@@ -15,7 +16,7 @@
     "logs": "firebase functions:log"
   },
   "dependencies": {
-    "@pharmacy-os/db": "workspace:*",
+    "@pharmacy-os/db": "file:./vendor/pharmacy-os-db",
     "firebase-admin": "^13.0.2",
     "firebase-functions": "^6.1.1",
     "zod": "^3.24.1"

@@ -3,8 +3,11 @@
 // Additional domains (products/batches/sales/patients/...) are added in later phases.
 
 generator client {
-  provider = "prisma-client-js"
-  output   = "../generated/client"
+  provider      = "prisma-client-js"
+  output        = "../generated/client"
+  // "native" covers local dev (macOS); debian-openssl-3.0.x covers the Ubuntu-based
+  // Cloud Functions 2nd-gen Node 20 runtime the generated client actually deploys to.
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {

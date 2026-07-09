@@ -4,7 +4,7 @@
       "source": "functions",
       "codebase": "default",
       "runtime": "nodejs20",
-      "predeploy": ["npm --prefix functions run build"]
+      "predeploy": ["npm --prefix functions run vendor-db", "npm --prefix functions run build"]
     }
   ],
   "firestore": {
