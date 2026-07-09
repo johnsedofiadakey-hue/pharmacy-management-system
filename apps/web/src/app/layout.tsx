@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Pharmacy OS",
-  description: "Multi-branch pharmacy operations platform.",
+  title: "Nexus Pharma",
+  description: "Branch-aware pharmacy shopping, delivery, and pharmacist-led care.",
 };
 
 export default function RootLayout({

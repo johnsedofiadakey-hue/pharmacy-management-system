@@ -20,7 +20,15 @@ export default function BranchesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [branchForm, setBranchForm] = useState({ name: "", code: "", phone: "", email: "" });
+  const [branchForm, setBranchForm] = useState({
+    name: "",
+    code: "",
+    phone: "",
+    email: "",
+    physicalAddress: "",
+    gpsLat: "",
+    gpsLng: "",
+  });
   const [creatingBranch, setCreatingBranch] = useState(false);
 
   const [inviteForm, setInviteForm] = useState({ name: "", email: "", roleId: "", branchId: "" });
@@ -55,8 +63,11 @@ export default function BranchesPage() {
         code: branchForm.code,
         phone: branchForm.phone || undefined,
         email: branchForm.email || undefined,
+        physicalAddress: branchForm.physicalAddress || undefined,
+        gpsLat: branchForm.gpsLat ? Number(branchForm.gpsLat) : undefined,
+        gpsLng: branchForm.gpsLng ? Number(branchForm.gpsLng) : undefined,
       });
-      setBranchForm({ name: "", code: "", phone: "", email: "" });
+      setBranchForm({ name: "", code: "", phone: "", email: "", physicalAddress: "", gpsLat: "", gpsLng: "" });
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create branch.");
@@ -97,14 +108,20 @@ export default function BranchesPage() {
   }
 
   return (
-    <main className="mx-auto max-w-2xl p-8">
-      <h1 className="text-2xl font-semibold mb-6">Branches</h1>
+    <main className="page-wrap py-8">
+      <div className="mb-6">
+        <p className="text-sm font-semibold uppercase text-[color:var(--primary)]">Super Admin</p>
+        <h1 className="mt-1 text-3xl font-semibold text-[color:var(--secondary)]">Branches and staff access</h1>
+        <p className="mt-2 max-w-2xl text-sm text-[color:var(--muted)]">
+          Create multiple pharmacy branches, add exact coordinates for nearest-branch discovery, then assign branch managers and staff.
+        </p>
+      </div>
 
       <form
         onSubmit={handleCreateBranch}
-        className="mb-8 flex flex-col gap-3 clinical-card rounded-lg p-4"
+        className="mb-8 grid gap-3 clinical-card rounded-lg p-5 md:grid-cols-2"
       >
-        <h2 className="font-medium">Add branch</h2>
+        <h2 className="font-medium text-[color:var(--secondary)] md:col-span-2">Add branch</h2>
         <input
           required
           placeholder="Branch name"
@@ -131,10 +148,32 @@ export default function BranchesPage() {
           value={branchForm.email}
           onChange={(e) => setBranchForm({ ...branchForm, email: e.target.value })}
         />
+        <input
+          placeholder="Physical address"
+          className="field px-3 py-2 md:col-span-2"
+          value={branchForm.physicalAddress}
+          onChange={(e) => setBranchForm({ ...branchForm, physicalAddress: e.target.value })}
+        />
+        <input
+          type="number"
+          step="any"
+          placeholder="Latitude, e.g. 5.6037"
+          className="field px-3 py-2"
+          value={branchForm.gpsLat}
+          onChange={(e) => setBranchForm({ ...branchForm, gpsLat: e.target.value })}
+        />
+        <input
+          type="number"
+          step="any"
+          placeholder="Longitude, e.g. -0.1870"
+          className="field px-3 py-2"
+          value={branchForm.gpsLng}
+          onChange={(e) => setBranchForm({ ...branchForm, gpsLng: e.target.value })}
+        />
         <button
           type="submit"
           disabled={creatingBranch}
-          className="btn-primary px-4 py-2 disabled:opacity-50"
+          className="btn-primary px-4 py-2 disabled:opacity-50 md:col-span-2"
         >
           {creatingBranch ? "Creating..." : "Create branch"}
         </button>
@@ -149,10 +188,7 @@ export default function BranchesPage() {
       ) : (
         <ul className="mb-8 flex flex-col gap-2">
           {branches.map((branch) => (
-            <li
-              key={branch.id}
-              className="flex items-center justify-between rounded border p-3"
-            >
+            <li key={branch.id} className="clinical-card flex items-center justify-between rounded-lg p-4">
               <div>
                 <div className="font-medium">
                   {branch.name}{" "}
@@ -160,11 +196,19 @@ export default function BranchesPage() {
                     <span className="text-xs text-red-600">(inactive)</span>
                   )}
                 </div>
-                <div className="text-sm text-[color:var(--muted)]">{branch.code}</div>
+                <div className="text-sm text-[color:var(--muted)]">
+                  {branch.code}
+                  {branch.physicalAddress ? ` • ${branch.physicalAddress}` : ""}
+                </div>
+                {branch.gpsLat != null && branch.gpsLng != null && (
+                  <div className="text-xs text-[color:var(--muted)]">
+                    {branch.gpsLat.toFixed(5)}, {branch.gpsLng.toFixed(5)}
+                  </div>
+                )}
               </div>
               <button
                 onClick={() => handleToggleActive(branch)}
-                className="rounded border px-3 py-1 text-sm"
+                className="btn-secondary px-3 py-1 text-sm"
               >
                 {branch.isActive ? "Deactivate" : "Reactivate"}
               </button>

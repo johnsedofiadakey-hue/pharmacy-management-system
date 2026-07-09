@@ -126,6 +126,7 @@ Each phase must ship a working, testable slice before the next begins. When a ph
 | 13 | SaaS Multi-Tenancy (Future) | Scaffolded (organisation status/plan, domain mapping, tenant resolver done; billing/self-service signup deferred; pending live verification) | [phase-13-saas-multi-tenancy.md](docs/phases/phase-13-saas-multi-tenancy.md) |
 | 14 | Paystack Payments & Live Readiness | Live (Cloud Functions, Firestore, Storage, Auth all deployed/enabled on `nexuspharmasystem`; first Super Admin created for Nexus Pharma and login verified live; pending only a Paystack test key, deliberately deferred to the account owner) | [phase-14-paystack-payments-live-readiness.md](docs/phases/phase-14-paystack-payments-live-readiness.md) |
 | 15 | Audit Hardening & Public UI | Built (tenant checks, stock/idempotency/payment timing fixes, public marketing site, branch gateway, and clinical UI refresh done; pending live Paystack webhook/test) | [phase-15-audit-hardening-public-ui.md](docs/phases/phase-15-audit-hardening-public-ui.md) |
+| 16 | Public Experience & Location-Aware Storefront | Built (richer public site, discreet admin access, branch coordinates, nearest-branch selection, product categories, and faster checkout UX done; live demo password update pending Console/service-account access) | [phase-16-public-experience-location-aware-storefront.md](docs/phases/phase-16-public-experience-location-aware-storefront.md) |
 
 ### Phase Details
 
@@ -186,6 +187,9 @@ Paystack payment initialization/verification, customer checkout redirect, paymen
 
 **Phase 15 — Audit Hardening & Public UI**
 Audit-driven backend hardening for tenant isolation, stock safety, POS idempotency, transfer bounds, and payment timing. Public Nexus Pharma marketing homepage with product/delivery messaging, universal branch/login gateway, and clinical trust-focused UI refresh across public, storefront, login, branch, admin, and POS surfaces.
+
+**Phase 16 — Public Experience & Location-Aware Storefront**
+Richer public marketing experience, discreet admin access, branch-coordinate capture, customer geolocation-based nearest-branch selection with manual fallback, professional product categories, and fewer-click checkout flow.
 
 ---
 

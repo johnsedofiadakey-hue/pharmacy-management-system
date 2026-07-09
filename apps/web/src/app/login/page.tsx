@@ -7,8 +7,8 @@ import { getFirebaseAuth } from "@/lib/firebase/client";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("admin@pharmacy.com");
+  const [password, setPassword] = useState("admin123");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -32,7 +32,7 @@ export default function LoginPage() {
         <p className="text-sm font-semibold uppercase text-[color:var(--primary)]">Secure staff access</p>
       <h1 className="mt-2 text-3xl font-semibold text-[color:var(--secondary)]">Sign in</h1>
       <p className="mt-2 text-sm text-[color:var(--muted)]">
-        Access branch operations, pharmacist tools, POS, and management dashboards.
+        Demo access for branch operations, pharmacist tools, POS, and management dashboards.
       </p>
       <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-3">
         <input

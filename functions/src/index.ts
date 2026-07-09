@@ -1,3 +1,7 @@
+import { setGlobalOptions } from "firebase-functions/v2";
+
+setGlobalOptions({ invoker: "public" });
+
 export { syncUserClaims } from "./auth/syncUserClaims";
 export { listBranches } from "./branches/listBranches";
 export { createBranch } from "./branches/createBranch";

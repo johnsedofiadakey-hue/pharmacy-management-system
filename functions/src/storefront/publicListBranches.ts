@@ -13,7 +13,7 @@ export const publicListBranches = onCall(async (request) => {
 
   const branches = await prisma.branch.findMany({
     where: { organisationId: parsed.data.organisationId, isActive: true },
-    select: { id: true, name: true, physicalAddress: true, phone: true },
+    select: { id: true, name: true, physicalAddress: true, phone: true, gpsLat: true, gpsLng: true },
     orderBy: { name: "asc" },
   });
 

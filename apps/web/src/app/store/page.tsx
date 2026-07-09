@@ -19,6 +19,31 @@ type CartLine = { productId: string; name: string; quantity: number; unitPrice: 
 type StorePaymentMethod = "CASH" | "MOMO" | "CARD" | "BANK_TRANSFER";
 
 const ORG_ID = process.env.NEXT_PUBLIC_ORGANISATION_ID ?? "";
+const categories = ["All", "Pain & fever", "Cold & flu", "Vitamins", "Baby care", "Personal care", "Prescription review"];
+
+function productCategory(product: PublicProduct): string {
+  const name = `${product.name} ${product.genericName ?? ""} ${product.brandName ?? ""}`.toLowerCase();
+  if (product.prescriptionClassification === "RESTRICTED" || product.prescriptionClassification === "POM") return "Prescription review";
+  if (/(pain|fever|para|ibuprofen|diclofenac|analgesic)/.test(name)) return "Pain & fever";
+  if (/(cold|flu|cough|catarrh|sinus|throat)/.test(name)) return "Cold & flu";
+  if (/(vitamin|supplement|zinc|iron|calcium|omega)/.test(name)) return "Vitamins";
+  if (/(baby|infant|diaper|nappy|child|kids)/.test(name)) return "Baby care";
+  if (/(soap|cream|lotion|sanitizer|tooth|skin|hair)/.test(name)) return "Personal care";
+  return "All";
+}
+
+function distanceKm(a: { lat: number; lng: number }, branch: PublicBranch): number | null {
+  if (branch.gpsLat == null || branch.gpsLng == null) return null;
+  const earthKm = 6371;
+  const dLat = ((branch.gpsLat - a.lat) * Math.PI) / 180;
+  const dLng = ((branch.gpsLng - a.lng) * Math.PI) / 180;
+  const lat1 = (a.lat * Math.PI) / 180;
+  const lat2 = (branch.gpsLat * Math.PI) / 180;
+  const hav =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return earthKm * 2 * Math.atan2(Math.sqrt(hav), Math.sqrt(1 - hav));
+}
 
 // Phase 9 skeleton — public browsing needs no sign-in; checkout does
 // (placeOrder is customer-auth-gated), so an unauthenticated checkout
@@ -34,6 +59,9 @@ export default function StorePage() {
   const [fulfilmentType, setFulfilmentType] = useState<"PICKUP" | "DELIVERY">("PICKUP");
   const [deliveryAddressId, setDeliveryAddressId] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<StorePaymentMethod>("MOMO");
+  const [category, setCategory] = useState("All");
+  const [nearestMessage, setNearestMessage] = useState("Choose a branch or use location for faster fulfilment.");
+  const [distances, setDistances] = useState<Record<string, number>>({});
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -80,6 +108,43 @@ export default function StorePage() {
   }
 
   const total = cart.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0);
+  const visibleProducts = products
+    .filter((product) => category === "All" || productCategory(product) === category)
+    .sort((a, b) => {
+      if (a.prescriptionClassification === "OTC" && b.prescriptionClassification !== "OTC") return -1;
+      if (a.prescriptionClassification !== "OTC" && b.prescriptionClassification === "OTC") return 1;
+      return a.name.localeCompare(b.name);
+    });
+
+  function selectNearestBranch() {
+    if (!navigator.geolocation) {
+      setNearestMessage("Location is not available in this browser.");
+      return;
+    }
+    setNearestMessage("Finding the closest branch...");
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const customerLocation = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+        const ranked = branches
+          .map((branch) => ({ branch, distance: distanceKm(customerLocation, branch) }))
+          .filter((item): item is { branch: PublicBranch; distance: number } => item.distance != null)
+          .sort((a, b) => a.distance - b.distance);
+        if (!ranked[0]) {
+          setNearestMessage("No branch coordinates are available yet. Please choose manually.");
+          return;
+        }
+        setDistances(Object.fromEntries(ranked.map((item) => [item.branch.id, item.distance])));
+        setBranchId(ranked[0].branch.id);
+        window.localStorage.setItem("selectedBranchId", ranked[0].branch.id);
+        setNearestMessage(`${ranked[0].branch.name} is closest, about ${ranked[0].distance.toFixed(1)} km away.`);
+      },
+      () => setNearestMessage("Location permission was not granted. Please choose manually."),
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 300000 }
+    );
+  }
 
   async function handleCheckout() {
     if (!user) {
@@ -140,19 +205,40 @@ export default function StorePage() {
       </section>
 
       <section className="page-wrap grid gap-8 py-10 lg:grid-cols-[1fr_380px]">
-        <div>
-          <p className="text-sm font-semibold uppercase text-[color:var(--primary)]">Storefront</p>
-          <h1 className="mt-2 text-4xl font-semibold text-[color:var(--secondary)]">
-            Trusted pharmacy products with branch fulfilment.
-          </h1>
-          <p className="mt-3 max-w-2xl text-[color:var(--muted)]">
-            Choose medicines and wellness products, select pickup or delivery, then pay securely or complete with branch support.
-          </p>
+        <div className="min-w-0">
+          <div className="store-spark w-full rounded-lg p-6 text-white">
+            <p className="text-sm font-semibold uppercase">Storefront</p>
+            <h1 className="mt-2 max-w-2xl text-4xl font-semibold">
+              Fast pharmacy checkout from the branch closest to you.
+            </h1>
+            <p className="mt-3 max-w-2xl text-white/82">
+              Shop essentials, get pharmacist-led support, and move from cart to checkout in a few focused steps.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <button type="button" onClick={selectNearestBranch} className="rounded bg-white px-4 py-2 text-sm font-semibold text-[color:var(--primary)]">
+                Use my location
+              </button>
+              <span className="status-pill max-w-full bg-white/18 text-white">{nearestMessage}</span>
+            </div>
+          </div>
 
           {error && <p className="mt-5 rounded bg-red-50 p-3 text-sm text-[color:var(--danger)]">{error}</p>}
           {message && <p className="mt-5 rounded bg-green-50 p-3 text-sm text-green-700">{message}</p>}
 
-          {products.length === 0 ? (
+          <div className="mt-6 flex max-w-full gap-2 overflow-x-auto pb-2">
+            {categories.map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setCategory(item)}
+                className={item === category ? "btn-primary shrink-0 px-4 py-2 text-sm" : "btn-secondary shrink-0 px-4 py-2 text-sm"}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+
+          {visibleProducts.length === 0 ? (
             <div className="clinical-card mt-8 rounded-lg p-5">
               <p className="font-semibold text-[color:var(--secondary)]">Catalogue is being prepared.</p>
               <p className="mt-2 text-sm text-[color:var(--muted)]">
@@ -161,7 +247,7 @@ export default function StorePage() {
             </div>
           ) : (
             <ul className="mt-8 grid gap-3 sm:grid-cols-2">
-              {products.map((product) => (
+              {visibleProducts.map((product) => (
                 <li key={product.id}>
                   <button
                     onClick={() => addToCart(product)}
@@ -169,7 +255,12 @@ export default function StorePage() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="font-semibold text-[color:var(--secondary)]">{product.name}</div>
-                      <span className="status-pill status-info">Stock</span>
+                      <span className={product.prescriptionClassification === "OTC" ? "status-pill status-safe" : "status-pill status-warn"}>
+                        {product.prescriptionClassification === "OTC" ? "Quick add" : "Rx review"}
+                      </span>
+                    </div>
+                    <div className="mt-2 text-xs font-semibold uppercase text-[color:var(--primary)]">
+                      {productCategory(product)}
                     </div>
                     <div className="mt-3 text-sm text-[color:var(--muted)]">
                       GHS {product.retailPrice ?? "—"}
@@ -184,8 +275,14 @@ export default function StorePage() {
           )}
         </div>
 
-        <aside className="clinical-card h-fit rounded-lg p-5">
-          <h2 className="mb-3 text-lg font-semibold text-[color:var(--secondary)]">Cart</h2>
+        <aside className="clinical-card h-fit min-w-0 rounded-lg p-5 lg:sticky lg:top-6">
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-[color:var(--secondary)]">Checkout</h2>
+              <p className="text-xs text-[color:var(--muted)]">Branch, delivery, payment. Done.</p>
+            </div>
+            <span className="status-pill status-safe">{cart.length} item{cart.length === 1 ? "" : "s"}</span>
+          </div>
           {cart.length === 0 ? (
             <p className="text-sm text-[color:var(--muted)]">No items yet.</p>
           ) : (
@@ -213,6 +310,7 @@ export default function StorePage() {
             {branches.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.name}
+                {distances[b.id] != null ? ` • ${distances[b.id].toFixed(1)} km` : ""}
               </option>
             ))}
           </select>
