@@ -588,6 +588,7 @@ model Sale {
   customer       Customer?     @relation(fields: [customerId], references: [id])
   prescriptionId String?
   prescription   Prescription? @relation(fields: [prescriptionId], references: [id])
+  clientSaleId   String?
 
   status        SaleStatus @default(COMPLETED)
   subtotal      Decimal    @db.Decimal(12, 2)
@@ -602,6 +603,7 @@ model Sale {
   nhisClaims NhisClaim[]
 
   @@index([branchId, status, createdAt])
+  @@unique([branchId, clientSaleId])
   @@map("sales")
 }
 

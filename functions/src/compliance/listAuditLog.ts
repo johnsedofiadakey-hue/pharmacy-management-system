@@ -13,6 +13,7 @@ export const listAuditLog = onCall(async (request) => {
 
   await requirePermission({
     userId: caller.id,
+    organisationId: caller.organisationId,
     branchId: null,
     resource: PermissionResource.REPORTS,
     action: PermissionAction.VIEW,

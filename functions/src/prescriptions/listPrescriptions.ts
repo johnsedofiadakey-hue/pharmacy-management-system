@@ -26,6 +26,7 @@ export const listPrescriptions = onCall(async (request) => {
 
   await requirePermission({
     userId: caller.id,
+    organisationId: caller.organisationId,
     branchId,
     resource: PermissionResource.PRESCRIPTIONS,
     action: PermissionAction.VIEW,

@@ -44,9 +44,14 @@ export default function StorePage() {
     }
     publicListProducts(ORG_ID)
       .then((r) => setProducts(r.data.products))
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load products."));
+      .catch(() => setError("Products are not available right now. Please try again shortly or contact a branch."));
     publicListBranches(ORG_ID)
-      .then((r) => setBranches(r.data.branches))
+      .then((r) => {
+        setBranches(r.data.branches);
+        const savedBranchId = window.localStorage.getItem("selectedBranchId");
+        const fallbackBranchId = r.data.branches[0]?.id ?? "";
+        setBranchId(r.data.branches.some((branch) => branch.id === savedBranchId) ? savedBranchId ?? "" : fallbackBranchId);
+      })
       .catch(() => undefined);
   }, []);
 
@@ -111,134 +116,165 @@ export default function StorePage() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Storefront</h1>
-        {user ? (
-          <Link href="/store/account" className="text-sm underline">
-            My account
+    <main className="app-shell min-h-screen pb-12">
+      <section className="border-b border-[color:var(--border)] bg-white/82">
+        <div className="page-wrap flex items-center justify-between py-5">
+          <Link href="/" className="text-xl font-semibold text-[color:var(--secondary)]">
+            Nexus Pharma
           </Link>
-        ) : (
-          <div className="flex gap-3 text-sm">
-            <Link href="/store/login" className="underline">
-              Log in
+          {user ? (
+            <Link href="/store/account" className="btn-secondary px-4 py-2 text-sm">
+              My account
             </Link>
-            <Link href="/store/signup" className="underline">
-              Sign up
-            </Link>
-          </div>
-        )}
-      </div>
+          ) : (
+            <div className="flex gap-3 text-sm">
+              <Link href="/store/login" className="btn-secondary px-4 py-2">
+                Log in
+              </Link>
+              <Link href="/store/signup" className="btn-primary px-4 py-2">
+                Sign up
+              </Link>
+            </div>
+          )}
+        </div>
+      </section>
 
-      {error && <p className="mb-4 text-red-600">{error}</p>}
-      {message && <p className="mb-4 text-green-700">{message}</p>}
+      <section className="page-wrap grid gap-8 py-10 lg:grid-cols-[1fr_380px]">
+        <div>
+          <p className="text-sm font-semibold uppercase text-[color:var(--primary)]">Storefront</p>
+          <h1 className="mt-2 text-4xl font-semibold text-[color:var(--secondary)]">
+            Trusted pharmacy products with branch fulfilment.
+          </h1>
+          <p className="mt-3 max-w-2xl text-[color:var(--muted)]">
+            Choose medicines and wellness products, select pickup or delivery, then pay securely or complete with branch support.
+          </p>
 
-      <ul className="mb-6 grid grid-cols-2 gap-2">
-        {products.map((product) => (
-          <li key={product.id}>
-            <button
-              onClick={() => addToCart(product)}
-              className="w-full rounded border p-2 text-left hover:bg-gray-50"
-            >
-              <div className="font-medium">{product.name}</div>
-              <div className="text-sm text-gray-500">
-                GHS {product.retailPrice ?? "—"}
-                {product.prescriptionClassification === "RESTRICTED" && (
-                  <span className="ml-2 text-red-600">Rx required</span>
-                )}
-              </div>
-            </button>
-          </li>
-        ))}
-      </ul>
+          {error && <p className="mt-5 rounded bg-red-50 p-3 text-sm text-[color:var(--danger)]">{error}</p>}
+          {message && <p className="mt-5 rounded bg-green-50 p-3 text-sm text-green-700">{message}</p>}
 
-      <div className="rounded-lg border p-4">
-        <h2 className="mb-3 font-medium">Cart</h2>
-        {cart.length === 0 ? (
-          <p className="text-gray-500">No items yet.</p>
-        ) : (
-          <ul className="mb-3 flex flex-col gap-1 text-sm">
-            {cart.map((l) => (
-              <li key={l.productId} className="flex justify-between">
-                <span>
-                  {l.name} × {l.quantity}
-                </span>
-                <span>GHS {(l.unitPrice * l.quantity).toFixed(2)}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <select
-          className="mb-2 w-full rounded border px-3 py-2"
-          value={branchId}
-          onChange={(e) => setBranchId(e.target.value)}
-        >
-          <option value="">Select branch...</option>
-          {branches.map((b) => (
-            <option key={b.id} value={b.id}>
-              {b.name}
-            </option>
-          ))}
-        </select>
-
-        <div className="mb-2 flex gap-3 text-sm">
-          <label>
-            <input
-              type="radio"
-              checked={fulfilmentType === "PICKUP"}
-              onChange={() => setFulfilmentType("PICKUP")}
-            />{" "}
-            Pickup
-          </label>
-          <label>
-            <input
-              type="radio"
-              checked={fulfilmentType === "DELIVERY"}
-              onChange={() => setFulfilmentType("DELIVERY")}
-            />{" "}
-            Delivery
-          </label>
+          {products.length === 0 ? (
+            <div className="clinical-card mt-8 rounded-lg p-5">
+              <p className="font-semibold text-[color:var(--secondary)]">Catalogue is being prepared.</p>
+              <p className="mt-2 text-sm text-[color:var(--muted)]">
+                Products will appear here after branch stock and public pricing are published.
+              </p>
+            </div>
+          ) : (
+            <ul className="mt-8 grid gap-3 sm:grid-cols-2">
+              {products.map((product) => (
+                <li key={product.id}>
+                  <button
+                    onClick={() => addToCart(product)}
+                    className="clinical-card min-h-32 w-full rounded-lg p-4 text-left transition hover:-translate-y-0.5"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="font-semibold text-[color:var(--secondary)]">{product.name}</div>
+                      <span className="status-pill status-info">Stock</span>
+                    </div>
+                    <div className="mt-3 text-sm text-[color:var(--muted)]">
+                      GHS {product.retailPrice ?? "—"}
+                      {product.prescriptionClassification === "RESTRICTED" && (
+                        <span className="ml-2 text-[color:var(--danger)]">Rx required</span>
+                      )}
+                    </div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
-        {fulfilmentType === "DELIVERY" && (
+        <aside className="clinical-card h-fit rounded-lg p-5">
+          <h2 className="mb-3 text-lg font-semibold text-[color:var(--secondary)]">Cart</h2>
+          {cart.length === 0 ? (
+            <p className="text-sm text-[color:var(--muted)]">No items yet.</p>
+          ) : (
+            <ul className="mb-3 flex flex-col gap-1 text-sm">
+              {cart.map((l) => (
+                <li key={l.productId} className="flex justify-between gap-3">
+                  <span>
+                    {l.name} × {l.quantity}
+                  </span>
+                  <span>GHS {(l.unitPrice * l.quantity).toFixed(2)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+
           <select
-            className="mb-2 w-full rounded border px-3 py-2"
-            value={deliveryAddressId}
-            onChange={(e) => setDeliveryAddressId(e.target.value)}
+            className="field mb-2 w-full px-3 py-3"
+            value={branchId}
+            onChange={(e) => {
+              setBranchId(e.target.value);
+              window.localStorage.setItem("selectedBranchId", e.target.value);
+            }}
           >
-            <option value="">Select delivery address...</option>
-            {addresses.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.label}
+            <option value="">Select branch...</option>
+            {branches.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
               </option>
             ))}
           </select>
-        )}
 
-        <select
-          className="mb-2 w-full rounded border px-3 py-2"
-          value={paymentMethod}
-          onChange={(e) => setPaymentMethod(e.target.value as StorePaymentMethod)}
-        >
-          <option value="MOMO">Mobile money via Paystack</option>
-          <option value="CARD">Card via Paystack</option>
-          <option value="BANK_TRANSFER">Bank transfer via Paystack</option>
-          <option value="CASH">Cash on pickup/delivery</option>
-        </select>
+          <div className="mb-3 grid grid-cols-2 gap-2 text-sm">
+            <label className="field px-3 py-2">
+              <input
+                type="radio"
+                checked={fulfilmentType === "PICKUP"}
+                onChange={() => setFulfilmentType("PICKUP")}
+              />{" "}
+              Pickup
+            </label>
+            <label className="field px-3 py-2">
+              <input
+                type="radio"
+                checked={fulfilmentType === "DELIVERY"}
+                onChange={() => setFulfilmentType("DELIVERY")}
+              />{" "}
+              Delivery
+            </label>
+          </div>
 
-        <div className="mb-3 flex justify-between font-medium">
-          <span>Total</span>
-          <span>GHS {total.toFixed(2)}</span>
-        </div>
-        <button
-          onClick={handleCheckout}
-          disabled={cart.length === 0 || !branchId || (fulfilmentType === "DELIVERY" && !deliveryAddressId)}
-          className="w-full rounded bg-black px-4 py-2 text-white disabled:opacity-50"
-        >
-          {user ? "Place order" : "Sign up to check out"}
-        </button>
-      </div>
+          {fulfilmentType === "DELIVERY" && (
+            <select
+              className="field mb-2 w-full px-3 py-3"
+              value={deliveryAddressId}
+              onChange={(e) => setDeliveryAddressId(e.target.value)}
+            >
+              <option value="">Select delivery address...</option>
+              {addresses.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.label}
+                </option>
+              ))}
+            </select>
+          )}
+
+          <select
+            className="field mb-2 w-full px-3 py-3"
+            value={paymentMethod}
+            onChange={(e) => setPaymentMethod(e.target.value as StorePaymentMethod)}
+          >
+            <option value="MOMO">Mobile money via Paystack</option>
+            <option value="CARD">Card via Paystack</option>
+            <option value="BANK_TRANSFER">Bank transfer via Paystack</option>
+            <option value="CASH">Cash on pickup/delivery</option>
+          </select>
+
+          <div className="mb-3 flex justify-between font-medium">
+            <span>Total</span>
+            <span>GHS {total.toFixed(2)}</span>
+          </div>
+          <button
+            onClick={handleCheckout}
+            disabled={cart.length === 0 || !branchId || (fulfilmentType === "DELIVERY" && !deliveryAddressId)}
+            className="btn-primary w-full px-4 py-3 disabled:opacity-50"
+          >
+            {user ? "Place order" : "Sign up to check out"}
+          </button>
+        </aside>
+      </section>
     </main>
   );
 }

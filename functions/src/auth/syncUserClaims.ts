@@ -1,6 +1,8 @@
 import { HttpsError, onCall } from "firebase-functions/v2/https";
-import { prisma } from "@pharmacy-os/db";
+import { PermissionAction, PermissionResource, prisma } from "@pharmacy-os/db";
 import { computeAndSyncClaims } from "./claims";
+import { getCallerUser } from "../lib/authContext";
+import { requirePermission } from "../lib/permissions";
 
 /**
  * Manual/admin-triggered re-sync of a user's claims + Firestore mirror doc.
@@ -28,15 +30,20 @@ export const syncUserClaims = onCall(async (request) => {
     throw new HttpsError("not-found", "User not found.");
   }
 
-  const callerRoles = (request.auth.token.roles as string[] | undefined) ?? [];
+  const caller = await getCallerUser(request);
   const isSelf = targetUser.firebaseUid === request.auth.uid;
-  const isSuperAdmin = callerRoles.includes("super_admin");
 
-  if (!isSelf && !isSuperAdmin) {
-    throw new HttpsError(
-      "permission-denied",
-      "Only Super Admin can resync another user's claims."
-    );
+  if (!isSelf) {
+    await requirePermission({
+      userId: caller.id,
+      organisationId: caller.organisationId,
+      branchId: null,
+      resource: PermissionResource.SETTINGS,
+      action: PermissionAction.EDIT,
+    });
+    if (targetUser.organisationId !== caller.organisationId) {
+      throw new HttpsError("not-found", "User not found in this organisation.");
+    }
   }
 
   await computeAndSyncClaims(userId);

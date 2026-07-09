@@ -35,7 +35,8 @@ export const updateDeliveryStatus = onCall(async (request) => {
   if (delivery.riderId !== caller.id) {
     await requirePermission({
       userId: caller.id,
-      branchId: delivery.order.branchId,
+    organisationId: caller.organisationId,
+    branchId: delivery.order.branchId,
       resource: PermissionResource.DELIVERIES,
       action: PermissionAction.EDIT,
     });

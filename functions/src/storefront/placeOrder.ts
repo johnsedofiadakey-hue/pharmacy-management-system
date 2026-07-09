@@ -4,7 +4,6 @@ import { prisma, StockMovementType, PaymentMethod } from "@pharmacy-os/db";
 import { getCallerCustomer } from "../lib/customerAuthContext";
 import { deductStockFefo } from "../inventory/fefo";
 import { refreshBranchDashboard } from "../dashboard/refreshBranchDashboard";
-import { awardLoyaltyPoints } from "../lib/loyalty";
 
 const placeOrderSchema = z.object({
   branchId: z.string().uuid(),
@@ -126,8 +125,6 @@ export const placeOrder = onCall(async (request) => {
     await tx.orderPayment.create({
       data: { orderId: createdOrder.id, paymentMethod: input.paymentMethod, amount: total },
     });
-
-    await awardLoyaltyPoints(tx, customer.id, total);
 
     if (input.fulfilmentType === "DELIVERY") {
       await tx.delivery.create({ data: { orderId: createdOrder.id } });

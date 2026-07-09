@@ -53,20 +53,26 @@ export async function applyStockMovement(
     update: {},
   });
 
-  const previousBalance = branchStock.quantityOnHand;
-  const newBalance = previousBalance + params.quantityDelta;
+  const updateResult = await tx.branchStock.updateMany({
+    where: {
+      id: branchStock.id,
+      ...(params.quantityDelta < 0 ? { quantityOnHand: { gte: -params.quantityDelta } } : {}),
+    },
+    data: { quantityOnHand: { increment: params.quantityDelta } },
+  });
 
-  if (newBalance < 0) {
+  if (updateResult.count !== 1) {
     throw new HttpsError(
       "failed-precondition",
-      `Insufficient stock in batch ${params.batchId}: have ${previousBalance}, requested ${-params.quantityDelta}.`
+      `Insufficient stock in batch ${params.batchId}: requested ${-params.quantityDelta}.`
     );
   }
 
-  await tx.branchStock.update({
+  const updatedStock = await tx.branchStock.findUniqueOrThrow({
     where: { id: branchStock.id },
-    data: { quantityOnHand: newBalance },
   });
+  const newBalance = updatedStock.quantityOnHand;
+  const previousBalance = newBalance - params.quantityDelta;
 
   return tx.stockMovement.create({
     data: {

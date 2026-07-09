@@ -36,6 +36,7 @@ export const updateOrderStatus = onCall(async (request) => {
 
   await requirePermission({
     userId: caller.id,
+    organisationId: caller.organisationId,
     branchId: order.branchId,
     resource: PermissionResource.ORDERS,
     action: PermissionAction.EDIT,

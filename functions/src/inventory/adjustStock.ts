@@ -48,6 +48,7 @@ export const adjustStock = onCall(async (request) => {
 
   await requirePermission({
     userId: caller.id,
+    organisationId: caller.organisationId,
     branchId: input.branchId,
     resource: PermissionResource.STOCK,
     action: PermissionAction.EDIT,

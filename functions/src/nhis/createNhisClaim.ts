@@ -27,6 +27,7 @@ export const createNhisClaim = onCall(async (request) => {
 
   await requirePermission({
     userId: caller.id,
+    organisationId: caller.organisationId,
     branchId: null,
     resource: PermissionResource.SALES,
     action: PermissionAction.CREATE,

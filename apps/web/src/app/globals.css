@@ -1,8 +1,18 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f6fbfa;
+  --foreground: #12313a;
+  --surface: #ffffff;
+  --surface-muted: #eaf5f2;
+  --primary: #006b6f;
+  --primary-strong: #004c59;
+  --secondary: #183b56;
+  --accent: #2aa876;
+  --warning: #b7791f;
+  --danger: #b42318;
+  --border: #cfe1dc;
+  --muted: #5d7379;
 }
 
 @theme inline {
@@ -14,13 +24,114 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #f6fbfa;
+    --foreground: #12313a;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  letter-spacing: 0;
+}
+
+.app-shell {
+  min-height: 100vh;
+  background:
+    linear-gradient(180deg, rgba(246, 251, 250, 0.94), rgba(246, 251, 250, 1)),
+    radial-gradient(circle at 20% 0%, rgba(42, 168, 118, 0.12), transparent 32%);
+}
+
+.page-wrap {
+  width: min(1120px, calc(100% - 32px));
+  margin: 0 auto;
+}
+
+.clinical-card {
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 16px 40px rgba(18, 49, 58, 0.08);
+}
+
+.btn-primary {
+  border-radius: 8px;
+  background: var(--primary);
+  color: white;
+  font-weight: 650;
+  transition: background 160ms ease, transform 160ms ease;
+}
+
+.btn-primary:hover {
+  background: var(--primary-strong);
+}
+
+.btn-primary:active {
+  transform: translateY(1px);
+}
+
+.btn-secondary {
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: white;
+  color: var(--secondary);
+  font-weight: 650;
+}
+
+.field {
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: white;
+  color: var(--foreground);
+}
+
+.status-pill {
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.status-safe {
+  background: #dff6ec;
+  color: #116149;
+}
+
+.status-info {
+  background: #e4f1f5;
+  color: #184f63;
+}
+
+.status-warn {
+  background: #fff3d6;
+  color: #805d16;
+}
+
+.trust-hero {
+  background-image:
+    linear-gradient(90deg, rgba(0, 76, 89, 0.94), rgba(0, 107, 111, 0.68), rgba(0, 76, 89, 0.26)),
+    url("https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=1800&q=85");
+  background-size: cover;
+  background-position: center;
+}
+
+@media print {
+  body {
+    background: white;
+  }
+}
+
+@media (max-width: 640px) {
+  .trust-hero {
+    background-image:
+      linear-gradient(90deg, rgba(0, 76, 89, 0.96), rgba(0, 107, 111, 0.74), rgba(0, 76, 89, 0.48)),
+      url("https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=1200&q=85");
+  }
 }

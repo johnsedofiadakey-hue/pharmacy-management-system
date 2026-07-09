@@ -27,14 +27,19 @@ export default function CustomerLoginPage() {
   }
 
   return (
-    <main className="mx-auto flex max-w-sm flex-col gap-4 p-8">
-      <h1 className="text-2xl font-semibold">Sign in</h1>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+    <main className="app-shell flex min-h-screen items-center justify-center p-6">
+      <section className="clinical-card w-full max-w-md rounded-lg p-6">
+        <p className="text-sm font-semibold uppercase text-[color:var(--primary)]">Customer portal</p>
+      <h1 className="mt-2 text-3xl font-semibold text-[color:var(--secondary)]">Sign in</h1>
+      <p className="mt-2 text-sm text-[color:var(--muted)]">
+        View orders, delivery status, loyalty, and care follow-ups.
+      </p>
+      <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-3">
         <input
           required
           type="email"
           placeholder="Email"
-          className="rounded border px-3 py-2"
+          className="field px-3 py-3"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
@@ -42,7 +47,7 @@ export default function CustomerLoginPage() {
           required
           type="password"
           placeholder="Password"
-          className="rounded border px-3 py-2"
+          className="field px-3 py-3"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
@@ -50,11 +55,12 @@ export default function CustomerLoginPage() {
         <button
           type="submit"
           disabled={submitting}
-          className="rounded bg-black px-4 py-2 text-white disabled:opacity-50"
+          className="btn-primary px-4 py-3 disabled:opacity-50"
         >
           {submitting ? "Signing in..." : "Sign in"}
         </button>
       </form>
+      </section>
     </main>
   );
 }

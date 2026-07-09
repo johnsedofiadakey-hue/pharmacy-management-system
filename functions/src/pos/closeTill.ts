@@ -43,6 +43,7 @@ export const closeTill = onCall(async (request) => {
 
   await requirePermission({
     userId: caller.id,
+    organisationId: caller.organisationId,
     branchId: tillSession.branchId,
     resource: PermissionResource.SALES,
     action: PermissionAction.EDIT,

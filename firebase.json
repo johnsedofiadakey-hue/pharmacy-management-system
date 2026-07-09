@@ -4,7 +4,13 @@
       "source": "functions",
       "codebase": "default",
       "runtime": "nodejs20",
-      "predeploy": ["npm --prefix functions run vendor-db", "npm --prefix functions run build"]
+      "predeploy": [
+        "pnpm --filter @pharmacy-os/db generate",
+        "pnpm --filter @pharmacy-os/db build",
+        "npm --prefix functions run vendor-db",
+        "pnpm install",
+        "npm --prefix functions run build"
+      ]
     }
   ],
   "hosting": {

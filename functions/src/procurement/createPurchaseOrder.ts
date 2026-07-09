@@ -30,6 +30,7 @@ export const createPurchaseOrder = onCall(async (request) => {
 
   await requirePermission({
     userId: caller.id,
+    organisationId: caller.organisationId,
     branchId: input.branchId,
     resource: PermissionResource.PURCHASES,
     action: PermissionAction.CREATE,

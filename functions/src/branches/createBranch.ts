@@ -28,6 +28,7 @@ export const createBranch = onCall(async (request) => {
 
   await requirePermission({
     userId: caller.id,
+    organisationId: caller.organisationId,
     branchId: null,
     resource: PermissionResource.BRANCHES,
     action: PermissionAction.CREATE,

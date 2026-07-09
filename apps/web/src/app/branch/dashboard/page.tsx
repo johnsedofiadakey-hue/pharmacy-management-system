@@ -85,7 +85,7 @@ export default function BranchDashboardPage() {
 
       <div className="mb-6 flex items-center gap-3">
         <select
-          className="rounded border px-3 py-2"
+          className="field px-3 py-2"
           value={branchId}
           onChange={(e) => setBranchId(e.target.value)}
         >
@@ -97,11 +97,11 @@ export default function BranchDashboardPage() {
           ))}
         </select>
         {!shiftId ? (
-          <button onClick={handleClockIn} disabled={!branchId} className="rounded border px-4 py-2">
+          <button onClick={handleClockIn} disabled={!branchId} className="btn-secondary px-4 py-2">
             Clock in
           </button>
         ) : (
-          <button onClick={handleClockOut} className="rounded border px-4 py-2">
+          <button onClick={handleClockOut} className="btn-secondary px-4 py-2">
             Clock out
           </button>
         )}
@@ -111,35 +111,35 @@ export default function BranchDashboardPage() {
         <>
           <div className="mb-6 grid grid-cols-3 gap-3">
             <div className="rounded border p-3">
-              <div className="text-xs text-gray-500">Today&apos;s sales</div>
+              <div className="text-xs text-[color:var(--muted)]">Today&apos;s sales</div>
               <div className="text-lg font-semibold">
                 GHS {live?.todaySalesTotal.toFixed(2) ?? "—"}
               </div>
-              <div className="text-xs text-gray-500">{live?.todaySalesCount ?? 0} transactions</div>
+              <div className="text-xs text-[color:var(--muted)]">{live?.todaySalesCount ?? 0} transactions</div>
             </div>
             <div className="rounded border p-3">
-              <div className="text-xs text-gray-500">Cash collected</div>
+              <div className="text-xs text-[color:var(--muted)]">Cash collected</div>
               <div className="text-lg font-semibold">
                 GHS {live?.cashCollectedToday.toFixed(2) ?? "—"}
               </div>
             </div>
             <div className="rounded border p-3">
-              <div className="text-xs text-gray-500">Staff clocked in</div>
+              <div className="text-xs text-[color:var(--muted)]">Staff clocked in</div>
               <div className="text-lg font-semibold">{live?.staffClockedInCount ?? "—"}</div>
             </div>
             <div className="rounded border p-3">
-              <div className="text-xs text-gray-500">Pending approvals</div>
+              <div className="text-xs text-[color:var(--muted)]">Pending approvals</div>
               <div className="text-lg font-semibold">{live?.pendingApprovalsCount ?? "—"}</div>
             </div>
             <div className="rounded border p-3">
-              <div className="text-xs text-gray-500">Low stock products</div>
+              <div className="text-xs text-[color:var(--muted)]">Low stock products</div>
               <div className="text-lg font-semibold">{live?.lowStockCount ?? "—"}</div>
             </div>
           </div>
 
           <h2 className="mb-3 font-medium">Pending stock adjustment approvals</h2>
           {requests.length === 0 ? (
-            <p className="text-gray-500">Nothing pending.</p>
+            <p className="text-[color:var(--muted)]">Nothing pending.</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {requests.map((req) => (
@@ -147,7 +147,7 @@ export default function BranchDashboardPage() {
                   <div className="font-medium">
                     {req.batch.product.name} — batch {req.batch.batchNumber}
                   </div>
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-[color:var(--muted)]">
                     {req.movementType} · {req.quantityDelta} units · requested by{" "}
                     {req.requestedBy.name}
                   </div>

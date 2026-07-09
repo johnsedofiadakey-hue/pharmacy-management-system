@@ -9,6 +9,7 @@ export const listRoles = onCall(async (request) => {
 
   await requirePermission({
     userId: caller.id,
+    organisationId: caller.organisationId,
     branchId: null,
     resource: PermissionResource.EMPLOYEES,
     action: PermissionAction.VIEW,

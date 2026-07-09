@@ -39,6 +39,7 @@ export const dispatchTransfer = onCall(async (request) => {
 
   await requirePermission({
     userId: caller.id,
+    organisationId: caller.organisationId,
     branchId: transfer.fromBranchId,
     resource: PermissionResource.TRANSFERS,
     action: PermissionAction.EDIT,
@@ -51,6 +52,12 @@ export const dispatchTransfer = onCall(async (request) => {
       const transferItem = itemsById.get(dispatchItem.transferItemId);
       if (!transferItem || transferItem.transferId !== transferId) {
         throw new HttpsError("not-found", `Transfer item ${dispatchItem.transferItemId} not found.`);
+      }
+      if (dispatchItem.quantitySent > transferItem.quantityRequested) {
+        throw new HttpsError(
+          "invalid-argument",
+          `Quantity sent cannot exceed quantity requested for transfer item ${transferItem.id}.`
+        );
       }
 
       await applyStockMovement(tx, {

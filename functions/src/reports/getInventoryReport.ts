@@ -22,6 +22,7 @@ export const getInventoryReport = onCall(async (request) => {
 
   await requirePermission({
     userId: caller.id,
+    organisationId: caller.organisationId,
     branchId,
     resource: PermissionResource.REPORTS,
     action: PermissionAction.VIEW,

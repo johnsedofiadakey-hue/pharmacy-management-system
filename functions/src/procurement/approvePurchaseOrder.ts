@@ -24,6 +24,7 @@ export const approvePurchaseOrder = onCall(async (request) => {
 
   await requirePermission({
     userId: caller.id,
+    organisationId: caller.organisationId,
     branchId: po.branchId,
     resource: PermissionResource.PURCHASES,
     action: PermissionAction.APPROVE,

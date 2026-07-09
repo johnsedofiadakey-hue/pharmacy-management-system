@@ -18,6 +18,7 @@ export const requestDashboardRefresh = onCall(async (request) => {
 
   await requirePermission({
     userId: caller.id,
+    organisationId: caller.organisationId,
     branchId: parsed.data.branchId,
     resource: PermissionResource.REPORTS,
     action: PermissionAction.VIEW,

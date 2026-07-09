@@ -34,6 +34,7 @@ export const requestTransfer = onCall(async (request) => {
 
   await requirePermission({
     userId: caller.id,
+    organisationId: caller.organisationId,
     branchId: input.toBranchId,
     resource: PermissionResource.TRANSFERS,
     action: PermissionAction.CREATE,

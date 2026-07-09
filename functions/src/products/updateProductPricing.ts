@@ -31,6 +31,7 @@ export const updateProductPricing = onCall(async (request) => {
 
   await requirePermission({
     userId: caller.id,
+    organisationId: caller.organisationId,
     branchId: null,
     resource: PermissionResource.PRICING,
     action: PermissionAction.EDIT,

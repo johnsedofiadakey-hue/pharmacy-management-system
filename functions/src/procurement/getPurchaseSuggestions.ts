@@ -28,6 +28,7 @@ export const getPurchaseSuggestions = onCall(async (request) => {
 
   await requirePermission({
     userId: caller.id,
+    organisationId: caller.organisationId,
     branchId,
     resource: PermissionResource.PURCHASES,
     action: PermissionAction.VIEW,

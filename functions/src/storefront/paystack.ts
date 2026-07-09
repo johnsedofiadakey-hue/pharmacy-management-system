@@ -1,5 +1,15 @@
 import { HttpsError } from "firebase-functions/v2/https";
-import { OrderPaymentStatus, OrderStatus, PaymentMethod, PaymentProvider, Prisma, prisma } from "@pharmacy-os/db";
+import {
+  OrderPaymentStatus,
+  OrderStatus,
+  PaymentMethod,
+  PaymentProvider,
+  Prisma,
+  StockMovementType,
+  prisma,
+} from "@pharmacy-os/db";
+import { awardLoyaltyPoints } from "../lib/loyalty";
+import { applyStockMovement } from "../inventory/ledger";
 
 const PAYSTACK_BASE_URL = "https://api.paystack.co";
 
@@ -100,6 +110,7 @@ export async function verifyPaystackTransaction(reference: string) {
 export async function markPaystackPaymentVerified(input: {
   paymentId: string;
   orderId: string;
+  customerId: string;
   expectedAmount: number;
   verifyResponse: PaystackResponse<PaystackVerifyData>;
 }) {
@@ -111,17 +122,64 @@ export async function markPaystackPaymentVerified(input: {
 
   if (!isPaid) {
     const failedStatuses = new Set(["failed", "abandoned", "reversed"]);
-    return prisma.orderPayment.update({
-      where: { id: input.paymentId },
-      data: {
-        status: failedStatuses.has(verified.status) ? OrderPaymentStatus.FAILED : OrderPaymentStatus.PENDING,
-        providerStatus: verified.status,
-        providerResponse: input.verifyResponse as unknown as Prisma.InputJsonValue,
-      },
+    if (!failedStatuses.has(verified.status)) {
+      return prisma.orderPayment.update({
+        where: { id: input.paymentId },
+        data: {
+          status: OrderPaymentStatus.PENDING,
+          providerStatus: verified.status,
+          providerResponse: input.verifyResponse as unknown as Prisma.InputJsonValue,
+        },
+      });
+    }
+
+    return prisma.$transaction(async (tx) => {
+      const existingPayment = await tx.orderPayment.findUniqueOrThrow({
+        where: { id: input.paymentId },
+      });
+
+      if (existingPayment.status !== OrderPaymentStatus.FAILED) {
+        const order = await tx.order.findUniqueOrThrow({
+          where: { id: input.orderId },
+          include: { items: true },
+        });
+
+        for (const item of order.items) {
+          await applyStockMovement(tx, {
+            organisationId: order.organisationId,
+            branchId: order.branchId,
+            productId: item.productId,
+            batchId: item.batchId,
+            quantityDelta: item.quantity,
+            movementType: StockMovementType.CUSTOMER_RETURN,
+            performedByCustomerId: input.customerId,
+            referenceType: "order_payment_failed",
+            referenceId: input.orderId,
+          });
+        }
+
+        await tx.order.update({
+          where: { id: input.orderId },
+          data: { status: OrderStatus.CANCELLED },
+        });
+      }
+
+      return tx.orderPayment.update({
+        where: { id: input.paymentId },
+        data: {
+          status: OrderPaymentStatus.FAILED,
+          providerStatus: verified.status,
+          providerResponse: input.verifyResponse as unknown as Prisma.InputJsonValue,
+        },
+      });
     });
   }
 
   return prisma.$transaction(async (tx) => {
+    const existingPayment = await tx.orderPayment.findUniqueOrThrow({
+      where: { id: input.paymentId },
+    });
+
     const payment = await tx.orderPayment.update({
       where: { id: input.paymentId },
       data: {
@@ -136,6 +194,10 @@ export async function markPaystackPaymentVerified(input: {
       where: { id: input.orderId },
       data: { status: OrderStatus.CONFIRMED },
     });
+
+    if (existingPayment.status !== OrderPaymentStatus.PAID) {
+      await awardLoyaltyPoints(tx, input.customerId, Number(payment.amount));
+    }
 
     return payment;
   });

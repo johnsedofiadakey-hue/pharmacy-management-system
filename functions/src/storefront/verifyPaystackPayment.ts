@@ -32,6 +32,7 @@ export const verifyPaystackPayment = onCall(async (request) => {
   const updatedPayment = await markPaystackPaymentVerified({
     paymentId: payment.id,
     orderId: payment.orderId,
+    customerId: customer.id,
     expectedAmount: toPaystackSubunit(payment.amount),
     verifyResponse,
   });

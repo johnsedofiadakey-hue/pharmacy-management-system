@@ -183,6 +183,7 @@ export default function PosPage() {
     const saleInput = {
       branchId,
       tillSessionId: tillSession.id,
+      clientSaleId: crypto.randomUUID(),
       items: cart.map((line) => ({
         productId: line.productId,
         quantity: line.quantity,
@@ -242,9 +243,9 @@ export default function PosPage() {
         </button>
       )}
 
-      <div className="mb-6 flex flex-wrap items-center gap-3 rounded-lg border p-4">
+      <div className="mb-6 flex flex-wrap items-center gap-3 clinical-card rounded-lg p-4">
         <select
-          className="rounded border px-3 py-2"
+          className="field px-3 py-2"
           value={branchId}
           onChange={(e) => setBranchId(e.target.value)}
           disabled={!!tillSession}
@@ -261,7 +262,7 @@ export default function PosPage() {
           <>
             <input
               type="number"
-              className="w-32 rounded border px-3 py-2"
+              className="w-32 field px-3 py-2"
               placeholder="Opening float"
               value={openingFloat}
               onChange={(e) => setOpeningFloat(e.target.value)}
@@ -269,7 +270,7 @@ export default function PosPage() {
             <button
               onClick={handleOpenTill}
               disabled={!branchId || busy}
-              className="rounded bg-black px-4 py-2 text-white disabled:opacity-50"
+              className="btn-primary px-4 py-2 disabled:opacity-50"
             >
               Open till
             </button>
@@ -279,7 +280,7 @@ export default function PosPage() {
             <span className="text-sm text-green-700">Till open</span>
             <input
               type="number"
-              className="w-32 rounded border px-3 py-2"
+              className="w-32 field px-3 py-2"
               placeholder="Closing actual"
               value={closingActual}
               onChange={(e) => setClosingActual(e.target.value)}
@@ -287,7 +288,7 @@ export default function PosPage() {
             <button
               onClick={handleCloseTill}
               disabled={busy}
-              className="rounded border px-4 py-2"
+              className="btn-secondary px-4 py-2"
             >
               Close till
             </button>
@@ -300,7 +301,7 @@ export default function PosPage() {
           <input
             ref={searchInputRef}
             placeholder="Scan barcode or search product name..."
-            className="mb-3 w-full rounded border px-3 py-2"
+            className="mb-3 w-full field px-3 py-2"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={handleSearchKeyDown}
@@ -310,19 +311,19 @@ export default function PosPage() {
               <li key={product.id}>
                 <button
                   onClick={() => addToCart(product)}
-                  className="w-full rounded border p-2 text-left hover:bg-gray-50"
+                  className="w-full clinical-card rounded-lg p-3 text-left hover:bg-white"
                 >
                   <div className="font-medium">{product.name}</div>
-                  <div className="text-sm text-gray-500">GHS {product.retailPrice ?? "—"}</div>
+                  <div className="text-sm text-[color:var(--muted)]">GHS {product.retailPrice ?? "—"}</div>
                 </button>
               </li>
             ))}
           </ul>
 
-          <div className="rounded-lg border p-4">
+          <div className="clinical-card rounded-lg p-4">
             <h2 className="mb-3 font-medium">Cart</h2>
             {cart.length === 0 ? (
-              <p className="text-gray-500">No items yet.</p>
+              <p className="text-[color:var(--muted)]">No items yet.</p>
             ) : (
               <ul className="mb-3 flex flex-col gap-1">
                 {cart.map((line) => (
@@ -342,7 +343,7 @@ export default function PosPage() {
             <button
               onClick={handleCheckout}
               disabled={cart.length === 0 || busy}
-              className="w-full rounded bg-black px-4 py-2 text-white disabled:opacity-50"
+              className="w-full btn-primary px-4 py-2 disabled:opacity-50"
             >
               Complete sale (cash)
             </button>

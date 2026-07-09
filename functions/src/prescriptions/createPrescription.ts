@@ -30,6 +30,7 @@ export const createPrescription = onCall(async (request) => {
 
   await requirePermission({
     userId: caller.id,
+    organisationId: caller.organisationId,
     branchId: input.branchId,
     resource: PermissionResource.PRESCRIPTIONS,
     action: PermissionAction.CREATE,

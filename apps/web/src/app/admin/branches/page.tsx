@@ -102,39 +102,39 @@ export default function BranchesPage() {
 
       <form
         onSubmit={handleCreateBranch}
-        className="mb-8 flex flex-col gap-3 rounded-lg border p-4"
+        className="mb-8 flex flex-col gap-3 clinical-card rounded-lg p-4"
       >
         <h2 className="font-medium">Add branch</h2>
         <input
           required
           placeholder="Branch name"
-          className="rounded border px-3 py-2"
+          className="field px-3 py-2"
           value={branchForm.name}
           onChange={(e) => setBranchForm({ ...branchForm, name: e.target.value })}
         />
         <input
           required
           placeholder="Branch code (e.g. EL01)"
-          className="rounded border px-3 py-2"
+          className="field px-3 py-2"
           value={branchForm.code}
           onChange={(e) => setBranchForm({ ...branchForm, code: e.target.value })}
         />
         <input
           placeholder="Phone"
-          className="rounded border px-3 py-2"
+          className="field px-3 py-2"
           value={branchForm.phone}
           onChange={(e) => setBranchForm({ ...branchForm, phone: e.target.value })}
         />
         <input
           placeholder="Email"
-          className="rounded border px-3 py-2"
+          className="field px-3 py-2"
           value={branchForm.email}
           onChange={(e) => setBranchForm({ ...branchForm, email: e.target.value })}
         />
         <button
           type="submit"
           disabled={creatingBranch}
-          className="rounded bg-black px-4 py-2 text-white disabled:opacity-50"
+          className="btn-primary px-4 py-2 disabled:opacity-50"
         >
           {creatingBranch ? "Creating..." : "Create branch"}
         </button>
@@ -145,7 +145,7 @@ export default function BranchesPage() {
       {loading ? (
         <p>Loading branches...</p>
       ) : branches.length === 0 ? (
-        <p className="text-gray-500">No branches yet.</p>
+        <p className="text-[color:var(--muted)]">No branches yet.</p>
       ) : (
         <ul className="mb-8 flex flex-col gap-2">
           {branches.map((branch) => (
@@ -160,7 +160,7 @@ export default function BranchesPage() {
                     <span className="text-xs text-red-600">(inactive)</span>
                   )}
                 </div>
-                <div className="text-sm text-gray-500">{branch.code}</div>
+                <div className="text-sm text-[color:var(--muted)]">{branch.code}</div>
               </div>
               <button
                 onClick={() => handleToggleActive(branch)}
@@ -173,12 +173,12 @@ export default function BranchesPage() {
         </ul>
       )}
 
-      <form onSubmit={handleInvite} className="flex flex-col gap-3 rounded-lg border p-4">
+      <form onSubmit={handleInvite} className="flex flex-col gap-3 clinical-card rounded-lg p-4">
         <h2 className="font-medium">Invite staff member</h2>
         <input
           required
           placeholder="Full name"
-          className="rounded border px-3 py-2"
+          className="field px-3 py-2"
           value={inviteForm.name}
           onChange={(e) => setInviteForm({ ...inviteForm, name: e.target.value })}
         />
@@ -186,13 +186,13 @@ export default function BranchesPage() {
           required
           type="email"
           placeholder="Email"
-          className="rounded border px-3 py-2"
+          className="field px-3 py-2"
           value={inviteForm.email}
           onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
         />
         <select
           required
-          className="rounded border px-3 py-2"
+          className="field px-3 py-2"
           value={inviteForm.roleId}
           onChange={(e) => setInviteForm({ ...inviteForm, roleId: e.target.value })}
         >
@@ -204,7 +204,7 @@ export default function BranchesPage() {
           ))}
         </select>
         <select
-          className="rounded border px-3 py-2"
+          className="field px-3 py-2"
           value={inviteForm.branchId}
           onChange={(e) => setInviteForm({ ...inviteForm, branchId: e.target.value })}
         >
@@ -218,7 +218,7 @@ export default function BranchesPage() {
         <button
           type="submit"
           disabled={inviting}
-          className="rounded bg-black px-4 py-2 text-white disabled:opacity-50"
+          className="btn-primary px-4 py-2 disabled:opacity-50"
         >
           {inviting ? "Inviting..." : "Send invite"}
         </button>

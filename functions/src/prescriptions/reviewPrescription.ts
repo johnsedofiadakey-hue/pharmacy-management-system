@@ -52,6 +52,7 @@ export const reviewPrescription = onCall(async (request) => {
 
   await requirePermission({
     userId: caller.id,
+    organisationId: caller.organisationId,
     branchId: prescription.branchId,
     resource: PermissionResource.PRESCRIPTIONS,
     action: PermissionAction.APPROVE,

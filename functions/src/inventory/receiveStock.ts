@@ -32,6 +32,7 @@ export const receiveStock = onCall(async (request) => {
 
   await requirePermission({
     userId: caller.id,
+    organisationId: caller.organisationId,
     branchId: input.branchId,
     resource: PermissionResource.STOCK,
     action: PermissionAction.CREATE,

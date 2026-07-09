@@ -24,6 +24,7 @@ export const rejectTransfer = onCall(async (request) => {
 
   await requirePermission({
     userId: caller.id,
+    organisationId: caller.organisationId,
     branchId: transfer.fromBranchId,
     resource: PermissionResource.TRANSFERS,
     action: PermissionAction.APPROVE,

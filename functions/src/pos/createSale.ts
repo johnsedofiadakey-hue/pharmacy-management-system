@@ -19,6 +19,7 @@ import { awardLoyaltyPoints } from "../lib/loyalty";
 const createSaleSchema = z.object({
   branchId: z.string().uuid(),
   tillSessionId: z.string().uuid(),
+  clientSaleId: z.string().uuid().optional(),
   customerPhone: z.string().optional(),
   prescriptionId: z.string().uuid().optional(),
   items: z
@@ -62,10 +63,25 @@ export const createSale = onCall(async (request) => {
 
   await requirePermission({
     userId: caller.id,
+    organisationId: caller.organisationId,
     branchId: input.branchId,
     resource: PermissionResource.SALES,
     action: PermissionAction.CREATE,
   });
+
+  if (input.clientSaleId) {
+    const existingSale = await prisma.sale.findFirst({
+      where: {
+        organisationId: caller.organisationId,
+        branchId: input.branchId,
+        clientSaleId: input.clientSaleId,
+      },
+      include: { items: true, payments: true },
+    });
+    if (existingSale) {
+      return { sale: existingSale };
+    }
+  }
 
   const tillSession = await prisma.tillSession.findUnique({ where: { id: input.tillSessionId } });
   if (!tillSession || tillSession.branchId !== input.branchId) {
@@ -171,6 +187,7 @@ export const createSale = onCall(async (request) => {
         tillSessionId: input.tillSessionId,
         customerId,
         prescriptionId: input.prescriptionId,
+        clientSaleId: input.clientSaleId,
         subtotal,
         discountTotal,
         taxTotal: 0,

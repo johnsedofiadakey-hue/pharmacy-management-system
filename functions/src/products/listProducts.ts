@@ -8,6 +8,7 @@ export const listProducts = onCall(async (request) => {
 
   await requirePermission({
     userId: caller.id,
+    organisationId: caller.organisationId,
     branchId: null,
     resource: PermissionResource.PRODUCTS,
     action: PermissionAction.VIEW,

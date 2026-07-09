@@ -28,6 +28,7 @@ export const assignDeliveryRider = onCall(async (request) => {
 
   await requirePermission({
     userId: caller.id,
+    organisationId: caller.organisationId,
     branchId: order.branchId,
     resource: PermissionResource.DELIVERIES,
     action: PermissionAction.EDIT,
