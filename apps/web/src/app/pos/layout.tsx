@@ -5,7 +5,7 @@ export default function PosLayout({ children }: { children: React.ReactNode }) {
   return (
     <RequireAuth>
       <div className="app-shell min-h-screen">
-        <header className="border-b border-[color:var(--border)] bg-white/88 print:hidden">
+        <header className="portal-topbar print:hidden">
           <div className="page-wrap flex items-center justify-between py-4">
             <Link href="/branch/dashboard" className="text-lg font-semibold text-[color:var(--secondary)]">
               Point of Sale

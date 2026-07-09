@@ -112,116 +112,134 @@ export default function CompliancePage() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl p-8">
-      <h1 className="mb-6 text-2xl font-semibold">Compliance</h1>
-      {error && <p className="mb-4 text-red-600">{error}</p>}
+    <main className="page-wrap py-8">
+      <div className="mb-6">
+        <p className="text-sm font-semibold uppercase text-[color:var(--primary)]">Super Admin</p>
+        <h1 className="mt-1 text-3xl font-semibold text-[color:var(--secondary)]">Compliance</h1>
+        <p className="mt-2 max-w-2xl text-sm text-[color:var(--muted)]">
+          Suspicious activity, drug recalls, adverse reactions, and the audit trail in one place.
+        </p>
+      </div>
 
-      <h2 className="mb-2 font-medium">Suspicious activity alerts</h2>
-      <select
-        className="mb-3 rounded border px-3 py-2"
-        value={branchId}
-        onChange={(e) => setBranchId(e.target.value)}
-      >
-        <option value="">Select branch...</option>
-        {branches.map((b) => (
-          <option key={b.id} value={b.id}>
-            {b.name}
-          </option>
-        ))}
-      </select>
-      {branchId && (
-        <ul className="mb-6 text-sm">
-          {alerts.length === 0 ? (
-            <li className="text-gray-500">No alerts.</li>
-          ) : (
-            alerts.map((a, i) => (
-              <li key={i} className={a.severity === "CRITICAL" ? "text-red-600" : "text-orange-600"}>
-                [{a.severity}] {a.description}
-              </li>
-            ))
-          )}
-        </ul>
-      )}
+      {error && <p className="mb-4 rounded bg-red-50 p-3 text-sm text-[color:var(--danger)]">{error}</p>}
 
-      <h2 className="mb-2 font-medium">Drug recalls</h2>
-      <form onSubmit={handleInitiateRecall} className="mb-3 flex gap-2">
-        <input
-          required
-          placeholder="Batch ID"
-          className="rounded border px-2 py-1 text-sm"
-          value={recallForm.batchId}
-          onChange={(e) => setRecallForm({ ...recallForm, batchId: e.target.value })}
-        />
-        <input
-          required
-          placeholder="Reason"
-          className="flex-1 rounded border px-2 py-1 text-sm"
-          value={recallForm.reason}
-          onChange={(e) => setRecallForm({ ...recallForm, reason: e.target.value })}
-        />
-        <button type="submit" className="rounded bg-black px-3 py-1 text-sm text-white">
-          Initiate recall
-        </button>
-      </form>
-      <ul className="mb-6 text-sm">
-        {recalls.map((r) => (
-          <li key={r.id} className="mb-1 flex items-center justify-between">
-            <span>
-              {r.batch.product.name} (batch {r.batch.batchNumber}): {r.reason} — {r.status}
-            </span>
-            {r.status === "ACTIVE" && (
-              <button onClick={() => handleResolveRecall(r.id)} className="rounded border px-2 py-0.5 text-xs">
-                Resolve
-              </button>
-            )}
-          </li>
-        ))}
-      </ul>
-
-      <h2 className="mb-2 font-medium">Adverse reaction reports</h2>
-      <form onSubmit={handleReportReaction} className="mb-3 flex flex-col gap-2">
+      <section className="clinical-card mb-6 rounded-xl p-5">
+        <h2 className="mb-3 font-semibold text-[color:var(--secondary)]">Suspicious activity alerts</h2>
         <select
-          required
-          className="rounded border px-2 py-1 text-sm"
-          value={reactionForm.productId}
-          onChange={(e) => setReactionForm({ ...reactionForm, productId: e.target.value })}
+          className="field mb-3 px-3 py-2"
+          value={branchId}
+          onChange={(e) => setBranchId(e.target.value)}
         >
-          <option value="">Select product...</option>
-          {products.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
+          <option value="">Select branch...</option>
+          {branches.map((b) => (
+            <option key={b.id} value={b.id}>
+              {b.name}
             </option>
           ))}
         </select>
-        <textarea
-          required
-          placeholder="Reaction description"
-          className="rounded border px-2 py-1 text-sm"
-          value={reactionForm.reactionDescription}
-          onChange={(e) => setReactionForm({ ...reactionForm, reactionDescription: e.target.value })}
-        />
-        <button type="submit" className="self-start rounded bg-black px-3 py-1 text-sm text-white">
-          Report reaction
-        </button>
-      </form>
-      <ul className="mb-6 text-sm">
-        {reactions.map((r) => (
-          <li key={r.id}>
-            {r.product.name}: {r.reactionDescription} (reported by {r.reportedBy.name})
-          </li>
-        ))}
-      </ul>
+        {branchId && (
+          <ul className="flex flex-col gap-1 text-sm">
+            {alerts.length === 0 ? (
+              <li className="text-[color:var(--muted)]">No alerts.</li>
+            ) : (
+              alerts.map((a, i) => (
+                <li key={i}>
+                  <span className={a.severity === "CRITICAL" ? "status-pill status-warn" : "status-pill status-info"}>
+                    {a.severity}
+                  </span>{" "}
+                  {a.description}
+                </li>
+              ))
+            )}
+          </ul>
+        )}
+      </section>
 
-      <h2 className="mb-2 font-medium">Audit log (last 200 entries)</h2>
-      <ul className="text-sm">
-        {auditEntries.map((e) => (
-          <li key={e.id}>
-            {new Date(e.createdAt).toLocaleString()} — {e.action} on {e.resourceType}
-            {e.user && ` by ${e.user.name}`}
-            {e.branch && ` at ${e.branch.name}`}
-          </li>
-        ))}
-      </ul>
+      <section className="clinical-card mb-6 rounded-xl p-5">
+        <h2 className="mb-3 font-semibold text-[color:var(--secondary)]">Drug recalls</h2>
+        <form onSubmit={handleInitiateRecall} className="mb-4 flex flex-wrap gap-2">
+          <input
+            required
+            placeholder="Batch ID"
+            className="field px-3 py-2 text-sm"
+            value={recallForm.batchId}
+            onChange={(e) => setRecallForm({ ...recallForm, batchId: e.target.value })}
+          />
+          <input
+            required
+            placeholder="Reason"
+            className="field flex-1 px-3 py-2 text-sm"
+            value={recallForm.reason}
+            onChange={(e) => setRecallForm({ ...recallForm, reason: e.target.value })}
+          />
+          <button type="submit" className="btn-primary px-4 py-2 text-sm">
+            Initiate recall
+          </button>
+        </form>
+        <ul className="flex flex-col gap-2 text-sm">
+          {recalls.map((r) => (
+            <li key={r.id} className="flex items-center justify-between gap-3 border-b border-[color:var(--border)] pb-2 last:border-0">
+              <span>
+                {r.batch.product.name} (batch {r.batch.batchNumber}): {r.reason} — {r.status}
+              </span>
+              {r.status === "ACTIVE" && (
+                <button onClick={() => handleResolveRecall(r.id)} className="btn-secondary shrink-0 px-3 py-1 text-xs">
+                  Resolve
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="clinical-card mb-6 rounded-xl p-5">
+        <h2 className="mb-3 font-semibold text-[color:var(--secondary)]">Adverse reaction reports</h2>
+        <form onSubmit={handleReportReaction} className="mb-4 flex flex-col gap-2">
+          <select
+            required
+            className="field px-3 py-2 text-sm"
+            value={reactionForm.productId}
+            onChange={(e) => setReactionForm({ ...reactionForm, productId: e.target.value })}
+          >
+            <option value="">Select product...</option>
+            {products.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+          <textarea
+            required
+            placeholder="Reaction description"
+            className="field px-3 py-2 text-sm"
+            value={reactionForm.reactionDescription}
+            onChange={(e) => setReactionForm({ ...reactionForm, reactionDescription: e.target.value })}
+          />
+          <button type="submit" className="btn-primary self-start px-4 py-2 text-sm">
+            Report reaction
+          </button>
+        </form>
+        <ul className="flex flex-col gap-1 text-sm">
+          {reactions.map((r) => (
+            <li key={r.id}>
+              {r.product.name}: {r.reactionDescription} (reported by {r.reportedBy.name})
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="clinical-card rounded-xl p-5">
+        <h2 className="mb-3 font-semibold text-[color:var(--secondary)]">Audit log (last 200 entries)</h2>
+        <ul className="flex flex-col gap-1 text-sm text-[color:var(--muted)]">
+          {auditEntries.map((e) => (
+            <li key={e.id}>
+              {new Date(e.createdAt).toLocaleString()} — {e.action} on {e.resourceType}
+              {e.user && ` by ${e.user.name}`}
+              {e.branch && ` at ${e.branch.name}`}
+            </li>
+          ))}
+        </ul>
+      </section>
     </main>
   );
 }

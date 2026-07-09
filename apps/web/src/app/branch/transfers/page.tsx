@@ -115,12 +115,19 @@ export default function TransfersPage() {
   }
 
   return (
-    <main className="mx-auto max-w-2xl p-8">
-      <h1 className="mb-6 text-2xl font-semibold">Transfers</h1>
-      {error && <p className="mb-4 text-red-600">{error}</p>}
+    <main className="page-wrap py-8">
+      <div className="mb-6">
+        <p className="text-sm font-semibold uppercase text-[color:var(--primary)]">Branch Workspace</p>
+        <h1 className="mt-1 text-3xl font-semibold text-[color:var(--secondary)]">Transfers</h1>
+        <p className="mt-2 max-w-2xl text-sm text-[color:var(--muted)]">
+          Request stock from other branches and track transfers in flight.
+        </p>
+      </div>
+
+      {error && <p className="mb-4 rounded bg-red-50 p-3 text-sm text-[color:var(--danger)]">{error}</p>}
 
       <select
-        className="mb-6 rounded border px-3 py-2"
+        className="field mb-6 px-3 py-2"
         value={branchId}
         onChange={(e) => setBranchId(e.target.value)}
       >
@@ -134,10 +141,10 @@ export default function TransfersPage() {
 
       {branchId && (
         <>
-          <form onSubmit={handleRequest} className="mb-8 flex flex-col gap-3 rounded-lg border p-4">
-            <h2 className="font-medium">Request transfer from another branch</h2>
+          <form onSubmit={handleRequest} className="clinical-card mb-8 flex flex-col gap-3 rounded-xl p-4">
+            <h2 className="font-semibold text-[color:var(--secondary)]">Request transfer from another branch</h2>
             <select
-              className="rounded border px-3 py-2"
+              className="field px-3 py-2"
               value={sourceBranchId}
               onChange={(e) => setSourceBranchId(e.target.value)}
             >
@@ -149,7 +156,7 @@ export default function TransfersPage() {
               ))}
             </select>
             <select
-              className="rounded border px-3 py-2"
+              className="field px-3 py-2"
               value={selectedStockId}
               onChange={(e) => setSelectedStockId(e.target.value)}
               disabled={!sourceBranchId}
@@ -164,34 +171,34 @@ export default function TransfersPage() {
             <input
               type="number"
               min={1}
-              className="rounded border px-3 py-2"
+              className="field px-3 py-2"
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
             />
             <button
               type="submit"
               disabled={!selectedStockId || busy}
-              className="rounded bg-black px-4 py-2 text-white disabled:opacity-50"
+              className="btn-primary px-4 py-2 disabled:opacity-50"
             >
               Request transfer
             </button>
           </form>
 
-          <h2 className="mb-3 font-medium">Transfers involving this branch</h2>
+          <h2 className="mb-3 font-semibold text-[color:var(--secondary)]">Transfers involving this branch</h2>
           {transfers.length === 0 ? (
-            <p className="text-gray-500">No transfers yet.</p>
+            <p className="text-[color:var(--muted)]">No transfers yet.</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {transfers.map((t) => {
                 const isSource = t.fromBranchId === branchId;
                 const isDest = t.toBranchId === branchId;
                 return (
-                  <li key={t.id} className="rounded border p-3">
-                    <div className="font-medium">
+                  <li key={t.id} className="clinical-card rounded-xl p-4">
+                    <div className="font-semibold text-[color:var(--secondary)]">
                       {t.fromBranch?.name} → {t.toBranch?.name}{" "}
-                      <span className="text-sm text-gray-500">({t.status})</span>
+                      <span className="status-pill status-info">{t.status}</span>
                     </div>
-                    <ul className="text-sm text-gray-600">
+                    <ul className="mt-1 text-sm text-[color:var(--muted)]">
                       {t.items.map((item) => (
                         <li key={item.id}>
                           {item.batch?.product.name} — requested {item.quantityRequested}
@@ -200,29 +207,29 @@ export default function TransfersPage() {
                         </li>
                       ))}
                     </ul>
-                    <div className="mt-2 flex gap-2">
+                    <div className="mt-3 flex gap-2">
                       {isSource && t.status === "REQUESTED" && (
                         <>
-                          <button onClick={() => handleAction(t, "approve")} className="rounded bg-black px-3 py-1 text-sm text-white">
+                          <button onClick={() => handleAction(t, "approve")} className="btn-primary px-3 py-1 text-sm">
                             Approve
                           </button>
-                          <button onClick={() => handleAction(t, "reject")} className="rounded border px-3 py-1 text-sm">
+                          <button onClick={() => handleAction(t, "reject")} className="btn-secondary px-3 py-1 text-sm">
                             Reject
                           </button>
                         </>
                       )}
                       {isSource && t.status === "APPROVED" && (
-                        <button onClick={() => handleAction(t, "dispatch")} className="rounded bg-black px-3 py-1 text-sm text-white">
+                        <button onClick={() => handleAction(t, "dispatch")} className="btn-primary px-3 py-1 text-sm">
                           Dispatch
                         </button>
                       )}
                       {isDest && t.status === "IN_TRANSIT" && (
-                        <button onClick={() => handleAction(t, "receive")} className="rounded bg-black px-3 py-1 text-sm text-white">
+                        <button onClick={() => handleAction(t, "receive")} className="btn-primary px-3 py-1 text-sm">
                           Receive
                         </button>
                       )}
                       {isDest && (t.status === "REQUESTED" || t.status === "APPROVED") && (
-                        <button onClick={() => handleAction(t, "cancel")} className="rounded border px-3 py-1 text-sm">
+                        <button onClick={() => handleAction(t, "cancel")} className="btn-secondary px-3 py-1 text-sm">
                           Cancel
                         </button>
                       )}

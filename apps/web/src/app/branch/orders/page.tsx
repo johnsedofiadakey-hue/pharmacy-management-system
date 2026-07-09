@@ -84,12 +84,19 @@ export default function BranchOrdersPage() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl p-8">
-      <h1 className="mb-6 text-2xl font-semibold">Online Orders</h1>
-      {error && <p className="mb-4 text-red-600">{error}</p>}
+    <main className="page-wrap py-8">
+      <div className="mb-6">
+        <p className="text-sm font-semibold uppercase text-[color:var(--primary)]">Branch Workspace</p>
+        <h1 className="mt-1 text-3xl font-semibold text-[color:var(--secondary)]">Online orders</h1>
+        <p className="mt-2 max-w-2xl text-sm text-[color:var(--muted)]">
+          Move orders through fulfilment and manage delivery riders for this branch.
+        </p>
+      </div>
+
+      {error && <p className="mb-4 rounded bg-red-50 p-3 text-sm text-[color:var(--danger)]">{error}</p>}
 
       <select
-        className="mb-6 rounded border px-3 py-2"
+        className="field mb-6 px-3 py-2"
         value={branchId}
         onChange={(e) => setBranchId(e.target.value)}
       >
@@ -102,16 +109,17 @@ export default function BranchOrdersPage() {
       </select>
 
       {orders.length === 0 ? (
-        <p className="text-gray-500">No orders yet.</p>
+        <p className="text-[color:var(--muted)]">No orders yet.</p>
       ) : (
         <ul className="flex flex-col gap-3">
           {orders.map((order) => (
-            <li key={order.id} className="rounded border p-3">
-              <div className="font-medium">
+            <li key={order.id} className="clinical-card rounded-xl p-4">
+              <div className="font-semibold text-[color:var(--secondary)]">
                 {order.customer?.phone} — {order.fulfilmentType}{" "}
-                <span className="text-sm text-gray-500">({order.status}) GHS {order.total}</span>
+                <span className="status-pill status-info">{order.status}</span>{" "}
+                <span className="text-sm text-[color:var(--muted)]">GHS {order.total}</span>
               </div>
-              <ul className="mb-2 text-sm text-gray-600">
+              <ul className="mb-2 mt-1 text-sm text-[color:var(--muted)]">
                 {order.items.map((item) => (
                   <li key={item.id}>
                     {item.product.name} × {item.quantity}
@@ -124,7 +132,7 @@ export default function BranchOrdersPage() {
                   <button
                     key={next}
                     onClick={() => handleStatusChange(order.id, next)}
-                    className="rounded border px-3 py-1 text-sm"
+                    className="btn-secondary px-3 py-1 text-sm"
                   >
                     Mark {next}
                   </button>
@@ -132,13 +140,13 @@ export default function BranchOrdersPage() {
               </div>
 
               {order.fulfilmentType === "DELIVERY" && order.delivery && (
-                <div className="mt-2 flex items-center gap-2">
-                  <span className="text-sm text-gray-500">Delivery: {order.delivery.status}</span>
+                <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[color:var(--border)] pt-3">
+                  <span className="status-pill status-safe">Delivery: {order.delivery.status}</span>
                   {!order.delivery.riderId && (
                     <>
                       <input
                         placeholder="Rider user ID"
-                        className="rounded border px-2 py-1 text-sm"
+                        className="field px-2 py-1 text-sm"
                         value={riderIdByOrder[order.id] ?? ""}
                         onChange={(e) =>
                           setRiderIdByOrder((prev) => ({ ...prev, [order.id]: e.target.value }))
@@ -146,7 +154,7 @@ export default function BranchOrdersPage() {
                       />
                       <button
                         onClick={() => handleAssignRider(order)}
-                        className="rounded border px-3 py-1 text-sm"
+                        className="btn-secondary px-3 py-1 text-sm"
                       >
                         Assign rider
                       </button>
@@ -155,7 +163,7 @@ export default function BranchOrdersPage() {
                   {order.delivery.riderId && order.delivery.status !== "DELIVERED" && (
                     <button
                       onClick={() => handleMarkDelivered(order.delivery!.id)}
-                      className="rounded border px-3 py-1 text-sm"
+                      className="btn-secondary px-3 py-1 text-sm"
                     >
                       Mark delivered
                     </button>

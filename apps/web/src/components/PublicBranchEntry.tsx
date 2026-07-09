@@ -76,12 +76,12 @@ export function PublicBranchEntry() {
   return (
     <section id="login" className="relative -mt-10 pb-12">
       <div className="page-wrap">
-        <div className="clinical-card grid gap-5 rounded-lg p-5 md:grid-cols-[1.15fr_1fr] md:p-6">
+        <div className="clinical-card grid gap-5 rounded-2xl p-5 md:grid-cols-[1.15fr_1fr] md:p-6">
           <div>
             <p className="text-xs font-semibold uppercase tracking-normal text-[color:var(--primary)]">
               Branch-aware access
             </p>
-            <h2 className="mt-1 text-2xl font-semibold text-[color:var(--secondary)]">
+            <h2 className="font-display mt-1 text-2xl font-semibold text-[color:var(--secondary)]">
               Start with the closest branch
             </h2>
             <p className="mt-2 max-w-xl text-sm text-[color:var(--muted)]">

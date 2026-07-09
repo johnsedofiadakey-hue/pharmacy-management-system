@@ -136,24 +136,31 @@ export default function PatientCarePage() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl p-8">
-      <h1 className="mb-6 text-2xl font-semibold">Patient Care</h1>
-      {error && <p className="mb-4 text-red-600">{error}</p>}
-      {message && <p className="mb-4 text-green-700">{message}</p>}
+    <main className="page-wrap py-8">
+      <div className="mb-6">
+        <p className="text-sm font-semibold uppercase text-[color:var(--primary)]">Branch Workspace</p>
+        <h1 className="mt-1 text-3xl font-semibold text-[color:var(--secondary)]">Patient care</h1>
+        <p className="mt-2 max-w-2xl text-sm text-[color:var(--muted)]">
+          Look up a customer, record vitals and consultations, and manage care plans and follow-ups.
+        </p>
+      </div>
+
+      {error && <p className="mb-4 rounded bg-red-50 p-3 text-sm text-[color:var(--danger)]">{error}</p>}
+      {message && <p className="mb-4 rounded bg-green-50 p-3 text-sm text-green-700">{message}</p>}
 
       {upcoming.length > 0 && (
-        <div className="mb-6 rounded-lg border p-4">
-          <h2 className="mb-2 font-medium">Follow-ups due (org-wide)</h2>
-          <ul className="text-sm">
+        <div className="clinical-card mb-6 rounded-xl p-4">
+          <h2 className="mb-2 font-semibold text-[color:var(--secondary)]">Follow-ups due (org-wide)</h2>
+          <ul className="flex flex-col gap-1 text-sm">
             {upcoming.map((f) => (
-              <li key={f.id} className="mb-1 flex items-center justify-between">
+              <li key={f.id} className="flex items-center justify-between gap-3">
                 <span>
                   {f.carePlan.patientProfile.customer.phone} — {f.carePlan.condition} — due{" "}
                   {new Date(f.scheduledDate).toLocaleDateString()}
                 </span>
                 <button
                   onClick={() => handleCompleteFollowup(f.id)}
-                  className="rounded border px-2 py-0.5 text-xs"
+                  className="btn-secondary shrink-0 px-2 py-1 text-xs"
                 >
                   Mark complete
                 </button>
@@ -164,7 +171,7 @@ export default function PatientCarePage() {
       )}
 
       <select
-        className="mb-4 rounded border px-3 py-2"
+        className="field mb-4 px-3 py-2"
         value={branchId}
         onChange={(e) => setBranchId(e.target.value)}
       >
@@ -180,107 +187,107 @@ export default function PatientCarePage() {
         <input
           required
           placeholder="Customer phone"
-          className="flex-1 rounded border px-3 py-2"
+          className="field flex-1 px-3 py-2"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
         />
-        <button type="submit" className="rounded bg-black px-4 py-2 text-white">
+        <button type="submit" className="btn-primary px-4 py-2">
           Search
         </button>
       </form>
 
       {customer && (
         <>
-          <h2 className="mb-2 font-medium">
-            {customer.phone} {customer.isPatient && <span className="text-sm text-gray-500">(patient)</span>}
+          <h2 className="mb-2 font-semibold text-[color:var(--secondary)]">
+            {customer.phone} {customer.isPatient && <span className="status-pill status-safe ml-2">Patient</span>}
           </h2>
 
-          <form onSubmit={handleRecordVitals} className="mb-4 flex flex-wrap gap-2 rounded-lg border p-4">
-            <h3 className="w-full text-sm font-medium">Record vitals</h3>
+          <form onSubmit={handleRecordVitals} className="clinical-card mb-4 flex flex-wrap gap-2 rounded-xl p-4">
+            <h3 className="w-full text-sm font-semibold text-[color:var(--secondary)]">Record vitals</h3>
             <input
               type="number"
               placeholder="BP systolic"
-              className="w-28 rounded border px-2 py-1"
+              className="field w-28 px-2 py-1"
               value={vitals.bpSystolic}
               onChange={(e) => setVitals({ ...vitals, bpSystolic: e.target.value })}
             />
             <input
               type="number"
               placeholder="BP diastolic"
-              className="w-28 rounded border px-2 py-1"
+              className="field w-28 px-2 py-1"
               value={vitals.bpDiastolic}
               onChange={(e) => setVitals({ ...vitals, bpDiastolic: e.target.value })}
             />
             <input
               type="number"
               placeholder="Glucose"
-              className="w-24 rounded border px-2 py-1"
+              className="field w-24 px-2 py-1"
               value={vitals.glucoseLevel}
               onChange={(e) => setVitals({ ...vitals, glucoseLevel: e.target.value })}
             />
             <input
               type="number"
               placeholder="Weight (kg)"
-              className="w-28 rounded border px-2 py-1"
+              className="field w-28 px-2 py-1"
               value={vitals.weightKg}
               onChange={(e) => setVitals({ ...vitals, weightKg: e.target.value })}
             />
-            <button type="submit" disabled={!branchId} className="rounded bg-black px-3 py-1 text-sm text-white">
+            <button type="submit" disabled={!branchId} className="btn-primary px-3 py-1 text-sm disabled:opacity-50">
               Save
             </button>
           </form>
 
-          <form onSubmit={handleLogConsultation} className="mb-4 flex flex-col gap-2 rounded-lg border p-4">
-            <h3 className="text-sm font-medium">Log consultation</h3>
+          <form onSubmit={handleLogConsultation} className="clinical-card mb-4 flex flex-col gap-2 rounded-xl p-4">
+            <h3 className="text-sm font-semibold text-[color:var(--secondary)]">Log consultation</h3>
             <input
               required
               placeholder="Reason"
-              className="rounded border px-2 py-1"
+              className="field px-2 py-1"
               value={consultation.reason}
               onChange={(e) => setConsultation({ ...consultation, reason: e.target.value })}
             />
             <textarea
               placeholder="Notes"
-              className="rounded border px-2 py-1"
+              className="field px-2 py-1"
               value={consultation.notes}
               onChange={(e) => setConsultation({ ...consultation, notes: e.target.value })}
             />
-            <button type="submit" disabled={!branchId} className="self-start rounded bg-black px-3 py-1 text-sm text-white">
+            <button type="submit" disabled={!branchId} className="btn-primary self-start px-3 py-1 text-sm disabled:opacity-50">
               Save
             </button>
           </form>
 
-          <form onSubmit={handleCreateCarePlan} className="mb-6 flex flex-col gap-2 rounded-lg border p-4">
-            <h3 className="text-sm font-medium">Create care plan</h3>
+          <form onSubmit={handleCreateCarePlan} className="clinical-card mb-6 flex flex-col gap-2 rounded-xl p-4">
+            <h3 className="text-sm font-semibold text-[color:var(--secondary)]">Create care plan</h3>
             <input
               required
               placeholder="Condition"
-              className="rounded border px-2 py-1"
+              className="field px-2 py-1"
               value={carePlan.condition}
               onChange={(e) => setCarePlan({ ...carePlan, condition: e.target.value })}
             />
             <input
               placeholder="Goals"
-              className="rounded border px-2 py-1"
+              className="field px-2 py-1"
               value={carePlan.goals}
               onChange={(e) => setCarePlan({ ...carePlan, goals: e.target.value })}
             />
             <input
               type="date"
-              className="rounded border px-2 py-1"
+              className="field px-2 py-1"
               value={carePlan.firstFollowupDate}
               onChange={(e) => setCarePlan({ ...carePlan, firstFollowupDate: e.target.value })}
             />
-            <button type="submit" className="self-start rounded bg-black px-3 py-1 text-sm text-white">
+            <button type="submit" className="btn-primary self-start px-3 py-1 text-sm">
               Create
             </button>
           </form>
 
           {record?.patientProfile && (
-            <div className="rounded-lg border p-4 text-sm">
-              <h3 className="mb-2 font-medium">Clinical history (org-wide)</h3>
-              <p className="mb-1 font-medium">Vitals</p>
-              <ul className="mb-3">
+            <div className="clinical-card rounded-xl p-4 text-sm">
+              <h3 className="mb-2 font-semibold text-[color:var(--secondary)]">Clinical history (org-wide)</h3>
+              <p className="mb-1 font-medium text-[color:var(--secondary)]">Vitals</p>
+              <ul className="mb-3 text-[color:var(--muted)]">
                 {record.patientProfile.vitals.map((v) => (
                   <li key={v.id}>
                     {new Date(v.recordedAt).toLocaleDateString()}: BP {v.bpSystolic}/{v.bpDiastolic}, glucose{" "}
@@ -288,16 +295,16 @@ export default function PatientCarePage() {
                   </li>
                 ))}
               </ul>
-              <p className="mb-1 font-medium">Consultations</p>
-              <ul className="mb-3">
+              <p className="mb-1 font-medium text-[color:var(--secondary)]">Consultations</p>
+              <ul className="mb-3 text-[color:var(--muted)]">
                 {record.patientProfile.consultations.map((c) => (
                   <li key={c.id}>
                     {new Date(c.consultationDate).toLocaleDateString()}: {c.reason} (by {c.pharmacist.name})
                   </li>
                 ))}
               </ul>
-              <p className="mb-1 font-medium">Care plans</p>
-              <ul>
+              <p className="mb-1 font-medium text-[color:var(--secondary)]">Care plans</p>
+              <ul className="text-[color:var(--muted)]">
                 {record.patientProfile.carePlans.map((cp) => (
                   <li key={cp.id}>
                     {cp.condition} ({cp.status}) —{" "}

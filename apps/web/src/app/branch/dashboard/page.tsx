@@ -78,12 +78,18 @@ export default function BranchDashboardPage() {
   }
 
   return (
-    <main className="mx-auto max-w-2xl p-8">
-      <h1 className="mb-6 text-2xl font-semibold">Branch Dashboard</h1>
+    <main className="page-wrap py-8">
+      <div className="mb-6">
+        <p className="text-sm font-semibold uppercase text-[color:var(--primary)]">Branch Workspace</p>
+        <h1 className="mt-1 text-3xl font-semibold text-[color:var(--secondary)]">Branch dashboard</h1>
+        <p className="mt-2 max-w-2xl text-sm text-[color:var(--muted)]">
+          Live sales, staffing, and approvals for the selected branch.
+        </p>
+      </div>
 
-      {error && <p className="mb-4 text-red-600">{error}</p>}
+      {error && <p className="mb-4 rounded bg-red-50 p-3 text-sm text-[color:var(--danger)]">{error}</p>}
 
-      <div className="mb-6 flex items-center gap-3">
+      <div className="mb-6 flex flex-wrap items-center gap-3">
         <select
           className="field px-3 py-2"
           value={branchId}
@@ -109,59 +115,55 @@ export default function BranchDashboardPage() {
 
       {branchId && (
         <>
-          <div className="mb-6 grid grid-cols-3 gap-3">
-            <div className="rounded border p-3">
-              <div className="text-xs text-[color:var(--muted)]">Today&apos;s sales</div>
-              <div className="text-lg font-semibold">
-                GHS {live?.todaySalesTotal.toFixed(2) ?? "—"}
-              </div>
-              <div className="text-xs text-[color:var(--muted)]">{live?.todaySalesCount ?? 0} transactions</div>
+          <div className="mb-8 grid gap-3 sm:grid-cols-3">
+            <div className="stat-card">
+              <div className="stat-card-label">Today&apos;s sales</div>
+              <div className="stat-card-value">GHS {live?.todaySalesTotal.toFixed(2) ?? "—"}</div>
+              <div className="mt-1 text-xs text-[color:var(--muted)]">{live?.todaySalesCount ?? 0} transactions</div>
             </div>
-            <div className="rounded border p-3">
-              <div className="text-xs text-[color:var(--muted)]">Cash collected</div>
-              <div className="text-lg font-semibold">
-                GHS {live?.cashCollectedToday.toFixed(2) ?? "—"}
-              </div>
+            <div className="stat-card">
+              <div className="stat-card-label">Cash collected</div>
+              <div className="stat-card-value">GHS {live?.cashCollectedToday.toFixed(2) ?? "—"}</div>
             </div>
-            <div className="rounded border p-3">
-              <div className="text-xs text-[color:var(--muted)]">Staff clocked in</div>
-              <div className="text-lg font-semibold">{live?.staffClockedInCount ?? "—"}</div>
+            <div className="stat-card">
+              <div className="stat-card-label">Staff clocked in</div>
+              <div className="stat-card-value">{live?.staffClockedInCount ?? "—"}</div>
             </div>
-            <div className="rounded border p-3">
-              <div className="text-xs text-[color:var(--muted)]">Pending approvals</div>
-              <div className="text-lg font-semibold">{live?.pendingApprovalsCount ?? "—"}</div>
+            <div className="stat-card">
+              <div className="stat-card-label">Pending approvals</div>
+              <div className="stat-card-value">{live?.pendingApprovalsCount ?? "—"}</div>
             </div>
-            <div className="rounded border p-3">
-              <div className="text-xs text-[color:var(--muted)]">Low stock products</div>
-              <div className="text-lg font-semibold">{live?.lowStockCount ?? "—"}</div>
+            <div className="stat-card">
+              <div className="stat-card-label">Low stock products</div>
+              <div className="stat-card-value">{live?.lowStockCount ?? "—"}</div>
             </div>
           </div>
 
-          <h2 className="mb-3 font-medium">Pending stock adjustment approvals</h2>
+          <h2 className="mb-3 font-semibold text-[color:var(--secondary)]">Pending stock adjustment approvals</h2>
           {requests.length === 0 ? (
             <p className="text-[color:var(--muted)]">Nothing pending.</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {requests.map((req) => (
-                <li key={req.id} className="rounded border p-3">
-                  <div className="font-medium">
+                <li key={req.id} className="clinical-card rounded-xl p-4">
+                  <div className="font-semibold text-[color:var(--secondary)]">
                     {req.batch.product.name} — batch {req.batch.batchNumber}
                   </div>
                   <div className="text-sm text-[color:var(--muted)]">
                     {req.movementType} · {req.quantityDelta} units · requested by{" "}
                     {req.requestedBy.name}
                   </div>
-                  {req.note && <div className="text-sm italic">&quot;{req.note}&quot;</div>}
-                  <div className="mt-2 flex gap-2">
+                  {req.note && <div className="text-sm italic text-[color:var(--muted)]">&quot;{req.note}&quot;</div>}
+                  <div className="mt-3 flex gap-2">
                     <button
                       onClick={() => handleReview(req.id, "APPROVED")}
-                      className="rounded bg-black px-3 py-1 text-sm text-white"
+                      className="btn-primary px-3 py-1 text-sm"
                     >
                       Approve
                     </button>
                     <button
                       onClick={() => handleReview(req.id, "REJECTED")}
-                      className="rounded border px-3 py-1 text-sm"
+                      className="btn-secondary px-3 py-1 text-sm"
                     >
                       Reject
                     </button>

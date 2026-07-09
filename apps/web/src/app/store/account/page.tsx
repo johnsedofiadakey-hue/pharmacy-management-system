@@ -63,67 +63,71 @@ function AccountContent() {
   }
 
   return (
-      <main className="mx-auto max-w-2xl p-8">
-      <h1 className="mb-6 text-2xl font-semibold">My Account</h1>
-      {error && <p className="mb-4 text-red-600">{error}</p>}
-      {message && <p className="mb-4 text-green-700">{message}</p>}
+    <main className="app-shell min-h-screen">
+      <div className="page-wrap max-w-2xl py-10">
+        <p className="text-sm font-semibold uppercase text-[color:var(--primary)]">Customer portal</p>
+        <h1 className="font-display mt-1 text-3xl font-semibold text-[color:var(--secondary)]">My account</h1>
 
-      <h2 className="mb-2 font-medium">Order history</h2>
-      {orders.length === 0 ? (
-        <p className="mb-6 text-gray-500">No orders yet.</p>
-      ) : (
-        <ul className="mb-6 flex flex-col gap-2">
-          {orders.map((order) => (
-            <li key={order.id} className="rounded border p-3 text-sm">
-              <div className="font-medium">
-                {order.fulfilmentType} — {order.status}{" "}
-                <span className="text-gray-500">(GHS {order.total})</span>
-              </div>
-              <ul className="text-gray-600">
-                {order.items.map((item) => (
-                  <li key={item.id}>
-                    {item.product.name} × {item.quantity}
-                  </li>
-                ))}
-              </ul>
-              {order.payments?.map((payment) => (
-                <div key={payment.id} className="text-gray-500">
-                  Payment: {payment.paymentMethod} / {payment.status}
+        {error && <p className="mt-4 rounded bg-red-50 p-3 text-sm text-[color:var(--danger)]">{error}</p>}
+        {message && <p className="mt-4 rounded bg-green-50 p-3 text-sm text-green-700">{message}</p>}
+
+        <h2 className="mb-2 mt-8 font-semibold text-[color:var(--secondary)]">Order history</h2>
+        {orders.length === 0 ? (
+          <p className="mb-6 text-[color:var(--muted)]">No orders yet.</p>
+        ) : (
+          <ul className="mb-6 flex flex-col gap-2">
+            {orders.map((order) => (
+              <li key={order.id} className="clinical-card rounded-xl p-4 text-sm">
+                <div className="font-semibold text-[color:var(--secondary)]">
+                  {order.fulfilmentType} — <span className="status-pill status-info">{order.status}</span>{" "}
+                  <span className="text-[color:var(--muted)]">(GHS {order.total})</span>
                 </div>
-              ))}
-              {order.delivery && <div className="text-gray-500">Delivery: {order.delivery.status}</div>}
+                <ul className="mt-1 text-[color:var(--muted)]">
+                  {order.items.map((item) => (
+                    <li key={item.id}>
+                      {item.product.name} × {item.quantity}
+                    </li>
+                  ))}
+                </ul>
+                {order.payments?.map((payment) => (
+                  <div key={payment.id} className="text-[color:var(--muted)]">
+                    Payment: {payment.paymentMethod} / {payment.status}
+                  </div>
+                ))}
+                {order.delivery && <div className="text-[color:var(--muted)]">Delivery: {order.delivery.status}</div>}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <h2 className="mb-2 font-semibold text-[color:var(--secondary)]">Delivery addresses</h2>
+        <ul className="mb-3 text-sm text-[color:var(--muted)]">
+          {addresses.map((a) => (
+            <li key={a.id}>
+              {a.label}: {a.addressText}
             </li>
           ))}
         </ul>
-      )}
-
-      <h2 className="mb-2 font-medium">Delivery addresses</h2>
-      <ul className="mb-3 text-sm">
-        {addresses.map((a) => (
-          <li key={a.id}>
-            {a.label}: {a.addressText}
-          </li>
-        ))}
-      </ul>
-      <form onSubmit={handleAddAddress} className="flex gap-2">
-        <input
-          required
-          placeholder="Label (e.g. Home)"
-          className="rounded border px-2 py-1 text-sm"
-          value={form.label}
-          onChange={(e) => setForm({ ...form, label: e.target.value })}
-        />
-        <input
-          required
-          placeholder="Address"
-          className="flex-1 rounded border px-2 py-1 text-sm"
-          value={form.addressText}
-          onChange={(e) => setForm({ ...form, addressText: e.target.value })}
-        />
-        <button type="submit" className="rounded bg-black px-3 py-1 text-sm text-white">
-          Add
-        </button>
-      </form>
+        <form onSubmit={handleAddAddress} className="flex gap-2">
+          <input
+            required
+            placeholder="Label (e.g. Home)"
+            className="field px-3 py-2 text-sm"
+            value={form.label}
+            onChange={(e) => setForm({ ...form, label: e.target.value })}
+          />
+          <input
+            required
+            placeholder="Address"
+            className="field flex-1 px-3 py-2 text-sm"
+            value={form.addressText}
+            onChange={(e) => setForm({ ...form, addressText: e.target.value })}
+          />
+          <button type="submit" className="btn-primary px-3 py-2 text-sm">
+            Add
+          </button>
+        </form>
+      </div>
     </main>
   );
 }

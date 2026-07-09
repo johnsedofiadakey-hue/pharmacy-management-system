@@ -72,13 +72,18 @@ export default function ReportsPage() {
   }, [branchId, reportType]);
 
   return (
-    <main className="mx-auto max-w-3xl p-8">
-      <h1 className="mb-6 text-2xl font-semibold">Reports (last 30 days)</h1>
-      {error && <p className="mb-4 text-red-600">{error}</p>}
+    <main className="page-wrap py-8">
+      <div className="mb-6">
+        <p className="text-sm font-semibold uppercase text-[color:var(--primary)]">Branch Workspace</p>
+        <h1 className="mt-1 text-3xl font-semibold text-[color:var(--secondary)]">Reports</h1>
+        <p className="mt-2 max-w-2xl text-sm text-[color:var(--muted)]">Trailing 30-day operational reports.</p>
+      </div>
 
-      <div className="mb-6 flex gap-3">
+      {error && <p className="mb-4 rounded bg-red-50 p-3 text-sm text-[color:var(--danger)]">{error}</p>}
+
+      <div className="mb-6 flex flex-wrap gap-3">
         <select
-          className="rounded border px-3 py-2"
+          className="field px-3 py-2"
           value={branchId}
           onChange={(e) => setBranchId(e.target.value)}
         >
@@ -90,7 +95,7 @@ export default function ReportsPage() {
           ))}
         </select>
         <select
-          className="rounded border px-3 py-2"
+          className="field px-3 py-2"
           value={reportType}
           onChange={(e) => setReportType(e.target.value as ReportType)}
         >
@@ -104,20 +109,20 @@ export default function ReportsPage() {
       </div>
 
       {reportType === "sales" && sales && (
-        <div className="text-sm">
-          <p className="mb-2 font-medium">
+        <div className="clinical-card rounded-xl p-5 text-sm">
+          <p className="mb-3 font-semibold text-[color:var(--secondary)]">
             Revenue: GHS {sales.totalRevenue.toFixed(2)} ({sales.totalTransactions} transactions)
           </p>
-          <p className="mb-1 font-medium">Top products</p>
-          <ul className="mb-3">
+          <p className="mb-1 font-medium text-[color:var(--secondary)]">Top products</p>
+          <ul className="mb-3 text-[color:var(--muted)]">
             {sales.byProduct.slice(0, 5).map((p) => (
               <li key={p.productId}>
                 {p.name}: GHS {p.revenue.toFixed(2)} ({p.unitsSold} units)
               </li>
             ))}
           </ul>
-          <p className="mb-1 font-medium">By payment method</p>
-          <ul>
+          <p className="mb-1 font-medium text-[color:var(--secondary)]">By payment method</p>
+          <ul className="text-[color:var(--muted)]">
             {sales.byPaymentMethod.map((p) => (
               <li key={p.method}>
                 {p.method}: GHS {p.amount.toFixed(2)}
@@ -128,12 +133,12 @@ export default function ReportsPage() {
       )}
 
       {reportType === "profitability" && profitability && (
-        <div className="text-sm">
-          <p className="mb-2 font-medium">
+        <div className="clinical-card rounded-xl p-5 text-sm">
+          <p className="mb-3 font-semibold text-[color:var(--secondary)]">
             Revenue GHS {profitability.totalRevenue.toFixed(2)} — Profit GHS{" "}
             {profitability.totalProfit.toFixed(2)} ({profitability.overallMarginPercent.toFixed(1)}% margin)
           </p>
-          <ul>
+          <ul className="text-[color:var(--muted)]">
             {profitability.byProduct.slice(0, 10).map((p) => (
               <li key={p.productId}>
                 {p.name}: profit GHS {p.profit.toFixed(2)} ({p.marginPercent.toFixed(1)}%)
@@ -144,18 +149,20 @@ export default function ReportsPage() {
       )}
 
       {reportType === "inventory" && inventory && (
-        <div className="text-sm">
-          <p className="mb-2 font-medium">Total stock value: GHS {inventory.totalStockValue.toFixed(2)}</p>
-          <p className="mb-1 font-medium">Low stock ({inventory.lowStock.length})</p>
-          <ul className="mb-3">
+        <div className="clinical-card rounded-xl p-5 text-sm">
+          <p className="mb-3 font-semibold text-[color:var(--secondary)]">
+            Total stock value: GHS {inventory.totalStockValue.toFixed(2)}
+          </p>
+          <p className="mb-1 font-medium text-[color:var(--secondary)]">Low stock ({inventory.lowStock.length})</p>
+          <ul className="mb-3 text-[color:var(--muted)]">
             {inventory.lowStock.map((p) => (
               <li key={p.productId}>
                 {p.name}: {p.quantityOnHand} on hand
               </li>
             ))}
           </ul>
-          <p className="mb-1 font-medium">Expiry risk</p>
-          <ul>
+          <p className="mb-1 font-medium text-[color:var(--secondary)]">Expiry risk</p>
+          <ul className="text-[color:var(--muted)]">
             <li>Expired: GHS {inventory.expiryRisk.expired.toFixed(2)}</li>
             <li>Within 30 days: GHS {inventory.expiryRisk.within30Days.toFixed(2)}</li>
             <li>Within 90 days: GHS {inventory.expiryRisk.within90Days.toFixed(2)}</li>
@@ -164,21 +171,23 @@ export default function ReportsPage() {
       )}
 
       {reportType === "procurement" && procurement && (
-        <div className="text-sm">
-          <p className="mb-1 font-medium">Supplier spend</p>
-          <ul className="mb-3">
+        <div className="clinical-card rounded-xl p-5 text-sm">
+          <p className="mb-1 font-medium text-[color:var(--secondary)]">Supplier spend</p>
+          <ul className="mb-3 text-[color:var(--muted)]">
             {procurement.supplierSpend.map((s) => (
               <li key={s.supplierId}>
                 {s.name}: GHS {s.total.toFixed(2)}
               </li>
             ))}
           </ul>
-          <p className="mb-1 font-medium">Pending POs ({procurement.pendingPurchaseOrders.length})</p>
+          <p className="font-medium text-[color:var(--secondary)]">
+            Pending POs ({procurement.pendingPurchaseOrders.length})
+          </p>
         </div>
       )}
 
       {reportType === "operations" && operations && (
-        <div className="text-sm">
+        <div className="clinical-card rounded-xl p-5 text-sm text-[color:var(--muted)]">
           <p>Total discounts: GHS {operations.totalDiscounts.toFixed(2)}</p>
           <p>
             Cash variance: GHS {operations.cashVariance.totalVariance.toFixed(2)} across{" "}
@@ -188,14 +197,16 @@ export default function ReportsPage() {
       )}
 
       {reportType === "forecast" && forecast && (
-        <ul className="text-sm">
-          {forecast.forecast.slice(0, 15).map((f) => (
-            <li key={f.productId}>
-              {f.productName}: {f.avgDailySales}/day — {f.trend} ({f.percentChange > 0 ? "+" : ""}
-              {f.percentChange}%)
-            </li>
-          ))}
-        </ul>
+        <div className="clinical-card rounded-xl p-5">
+          <ul className="text-sm text-[color:var(--muted)]">
+            {forecast.forecast.slice(0, 15).map((f) => (
+              <li key={f.productId}>
+                {f.productName}: {f.avgDailySales}/day — {f.trend} ({f.percentChange > 0 ? "+" : ""}
+                {f.percentChange}%)
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </main>
   );

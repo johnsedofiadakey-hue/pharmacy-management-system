@@ -116,12 +116,19 @@ export default function PharmacistWorkspacePage() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl p-8">
-      <h1 className="mb-6 text-2xl font-semibold">Pharmacist Workspace</h1>
-      {error && <p className="mb-4 text-red-600">{error}</p>}
+    <main className="page-wrap py-8">
+      <div className="mb-6">
+        <p className="text-sm font-semibold uppercase text-[color:var(--primary)]">Branch Workspace</p>
+        <h1 className="mt-1 text-3xl font-semibold text-[color:var(--secondary)]">Pharmacist workspace</h1>
+        <p className="mt-2 max-w-2xl text-sm text-[color:var(--muted)]">
+          Log prescriptions, match products, and approve or reject requests before dispensing.
+        </p>
+      </div>
+
+      {error && <p className="mb-4 rounded bg-red-50 p-3 text-sm text-[color:var(--danger)]">{error}</p>}
 
       <select
-        className="mb-6 rounded border px-3 py-2"
+        className="field mb-6 px-3 py-2"
         value={branchId}
         onChange={(e) => setBranchId(e.target.value)}
       >
@@ -135,12 +142,12 @@ export default function PharmacistWorkspacePage() {
 
       {branchId && (
         <>
-          <form onSubmit={handleIntake} className="mb-8 flex flex-col gap-3 rounded-lg border p-4">
-            <h2 className="font-medium">Log a prescription</h2>
+          <form onSubmit={handleIntake} className="clinical-card mb-8 flex flex-col gap-3 rounded-xl p-4">
+            <h2 className="font-semibold text-[color:var(--secondary)]">Log a prescription</h2>
             <input
               required
               placeholder="Customer phone"
-              className="rounded border px-3 py-2"
+              className="field px-3 py-2"
               value={customerPhone}
               onChange={(e) => setCustomerPhone(e.target.value)}
             />
@@ -149,7 +156,7 @@ export default function PharmacistWorkspacePage() {
                 <input
                   required
                   placeholder="What's written on the prescription..."
-                  className="flex-1 rounded border px-3 py-2"
+                  className="field flex-1 px-3 py-2"
                   value={item.requestedText}
                   onChange={(e) =>
                     setItemDrafts((prev) =>
@@ -160,7 +167,7 @@ export default function PharmacistWorkspacePage() {
                 <input
                   type="number"
                   min={1}
-                  className="w-20 rounded border px-3 py-2"
+                  className="field w-20 px-3 py-2"
                   value={item.quantity}
                   onChange={(e) =>
                     setItemDrafts((prev) =>
@@ -173,36 +180,36 @@ export default function PharmacistWorkspacePage() {
             <button
               type="button"
               onClick={() => setItemDrafts((prev) => [...prev, { requestedText: "", quantity: "1" }])}
-              className="text-sm text-gray-600 underline"
+              className="self-start text-sm font-medium text-[color:var(--primary)] underline"
             >
               + add item
             </button>
-            <button type="submit" className="rounded bg-black px-4 py-2 text-white">
+            <button type="submit" className="btn-primary px-4 py-2">
               Log prescription
             </button>
           </form>
 
-          <h2 className="mb-3 font-medium">Pending review</h2>
+          <h2 className="mb-3 font-semibold text-[color:var(--secondary)]">Pending review</h2>
           {prescriptions.length === 0 ? (
-            <p className="text-gray-500">Nothing pending.</p>
+            <p className="text-[color:var(--muted)]">Nothing pending.</p>
           ) : (
             <ul className="flex flex-col gap-3">
               {prescriptions.map((prescription) => (
-                <li key={prescription.id} className="rounded border p-3">
-                  <div className="mb-2 font-medium">
+                <li key={prescription.id} className="clinical-card rounded-xl p-4">
+                  <div className="mb-2 font-semibold text-[color:var(--secondary)]">
                     {prescription.customer?.phone}{" "}
-                    <span className="text-sm text-gray-500">({prescription.status})</span>
+                    <span className="status-pill status-info">{prescription.status}</span>
                   </div>
-                  <ul className="mb-2 flex flex-col gap-2">
+                  <ul className="mb-3 flex flex-col gap-2">
                     {prescription.items.map((item) => {
                       const draft = getDraft(prescription.id, item.id);
                       return (
-                        <li key={item.id} className="flex items-center gap-2 text-sm">
-                          <span className="w-40">
+                        <li key={item.id} className="flex flex-wrap items-center gap-2 text-sm">
+                          <span className="w-40 shrink-0">
                             {item.requestedText} × {item.quantity}
                           </span>
                           <select
-                            className="rounded border px-2 py-1"
+                            className="field px-2 py-1"
                             value={draft.productId}
                             onChange={(e) => setDraft(prescription.id, item.id, { productId: e.target.value })}
                           >
@@ -214,7 +221,7 @@ export default function PharmacistWorkspacePage() {
                             ))}
                           </select>
                           <select
-                            className="rounded border px-2 py-1"
+                            className="field px-2 py-1"
                             value={draft.availabilityStatus}
                             onChange={(e) =>
                               setDraft(prescription.id, item.id, { availabilityStatus: e.target.value })
@@ -231,19 +238,19 @@ export default function PharmacistWorkspacePage() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleReview(prescription, "APPROVE")}
-                      className="rounded bg-black px-3 py-1 text-sm text-white"
+                      className="btn-primary px-3 py-1 text-sm"
                     >
                       Approve
                     </button>
                     <button
                       onClick={() => handleReview(prescription, "REJECT")}
-                      className="rounded border px-3 py-1 text-sm"
+                      className="btn-secondary px-3 py-1 text-sm"
                     >
                       Reject
                     </button>
                     <button
                       onClick={() => handleReview(prescription, "REQUEST_CLARIFICATION")}
-                      className="rounded border px-3 py-1 text-sm"
+                      className="btn-secondary px-3 py-1 text-sm"
                     >
                       Request clarification
                     </button>

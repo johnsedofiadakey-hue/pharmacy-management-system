@@ -28,9 +28,9 @@ export default function LoginPage() {
 
   return (
     <main className="app-shell flex min-h-screen items-center justify-center p-6">
-      <section className="clinical-card w-full max-w-md rounded-lg p-6">
+      <section className="clinical-card w-full max-w-md rounded-2xl p-6">
         <p className="text-sm font-semibold uppercase text-[color:var(--primary)]">Secure staff access</p>
-      <h1 className="mt-2 text-3xl font-semibold text-[color:var(--secondary)]">Sign in</h1>
+      <h1 className="font-display mt-2 text-3xl font-semibold text-[color:var(--secondary)]">Sign in</h1>
       <p className="mt-2 text-sm text-[color:var(--muted)]">
         Demo access for branch operations, pharmacist tools, POS, and management dashboards.
       </p>

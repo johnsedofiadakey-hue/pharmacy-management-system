@@ -206,9 +206,9 @@ export default function StorePage() {
 
       <section className="page-wrap grid gap-8 py-10 lg:grid-cols-[1fr_380px]">
         <div className="min-w-0">
-          <div className="store-spark w-full rounded-lg p-6 text-white">
+          <div className="store-spark w-full rounded-2xl p-6 text-white">
             <p className="text-sm font-semibold uppercase">Storefront</p>
-            <h1 className="mt-2 max-w-2xl text-4xl font-semibold">
+            <h1 className="font-display mt-2 max-w-2xl text-4xl font-semibold">
               Fast pharmacy checkout from the branch closest to you.
             </h1>
             <p className="mt-3 max-w-2xl text-white/82">
@@ -239,7 +239,7 @@ export default function StorePage() {
           </div>
 
           {visibleProducts.length === 0 ? (
-            <div className="clinical-card mt-8 rounded-lg p-5">
+            <div className="clinical-card mt-8 rounded-xl p-5">
               <p className="font-semibold text-[color:var(--secondary)]">Catalogue is being prepared.</p>
               <p className="mt-2 text-sm text-[color:var(--muted)]">
                 Products will appear here after branch stock and public pricing are published.
@@ -251,7 +251,7 @@ export default function StorePage() {
                 <li key={product.id}>
                   <button
                     onClick={() => addToCart(product)}
-                    className="clinical-card min-h-32 w-full rounded-lg p-4 text-left transition hover:-translate-y-0.5"
+                    className="clinical-card min-h-32 w-full rounded-xl p-4 text-left transition hover:-translate-y-0.5"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="font-semibold text-[color:var(--secondary)]">{product.name}</div>
@@ -275,7 +275,7 @@ export default function StorePage() {
           )}
         </div>
 
-        <aside className="clinical-card h-fit min-w-0 rounded-lg p-5 lg:sticky lg:top-6">
+        <aside className="clinical-card h-fit min-w-0 rounded-2xl p-5 lg:sticky lg:top-6">
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold text-[color:var(--secondary)]">Checkout</h2>

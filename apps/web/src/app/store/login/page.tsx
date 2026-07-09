@@ -28,9 +28,9 @@ export default function CustomerLoginPage() {
 
   return (
     <main className="app-shell flex min-h-screen items-center justify-center p-6">
-      <section className="clinical-card w-full max-w-md rounded-lg p-6">
+      <section className="clinical-card w-full max-w-md rounded-2xl p-6">
         <p className="text-sm font-semibold uppercase text-[color:var(--primary)]">Customer portal</p>
-      <h1 className="mt-2 text-3xl font-semibold text-[color:var(--secondary)]">Sign in</h1>
+      <h1 className="font-display mt-2 text-3xl font-semibold text-[color:var(--secondary)]">Sign in</h1>
       <p className="mt-2 text-sm text-[color:var(--muted)]">
         View orders, delivery status, loyalty, and care follow-ups.
       </p>

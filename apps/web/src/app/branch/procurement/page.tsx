@@ -125,12 +125,19 @@ export default function ProcurementPage() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl p-8">
-      <h1 className="mb-6 text-2xl font-semibold">Procurement</h1>
-      {error && <p className="mb-4 text-red-600">{error}</p>}
+    <main className="page-wrap py-8">
+      <div className="mb-6">
+        <p className="text-sm font-semibold uppercase text-[color:var(--primary)]">Branch Workspace</p>
+        <h1 className="mt-1 text-3xl font-semibold text-[color:var(--secondary)]">Procurement</h1>
+        <p className="mt-2 max-w-2xl text-sm text-[color:var(--muted)]">
+          Manage suppliers, raise purchase orders, and receive incoming stock.
+        </p>
+      </div>
+
+      {error && <p className="mb-4 rounded bg-red-50 p-3 text-sm text-[color:var(--danger)]">{error}</p>}
 
       <select
-        className="mb-6 rounded border px-3 py-2"
+        className="field mb-6 px-3 py-2"
         value={branchId}
         onChange={(e) => setBranchId(e.target.value)}
       >
@@ -142,22 +149,22 @@ export default function ProcurementPage() {
         ))}
       </select>
 
-      <form onSubmit={handleCreateSupplier} className="mb-6 flex flex-wrap gap-2 rounded-lg border p-4">
-        <h2 className="w-full font-medium">Add supplier</h2>
+      <form onSubmit={handleCreateSupplier} className="clinical-card mb-6 flex flex-wrap gap-2 rounded-xl p-4">
+        <h2 className="w-full font-semibold text-[color:var(--secondary)]">Add supplier</h2>
         <input
           required
           placeholder="Company name"
-          className="rounded border px-3 py-2"
+          className="field px-3 py-2"
           value={supplierForm.companyName}
           onChange={(e) => setSupplierForm({ ...supplierForm, companyName: e.target.value })}
         />
         <input
           placeholder="Phone"
-          className="rounded border px-3 py-2"
+          className="field px-3 py-2"
           value={supplierForm.phone}
           onChange={(e) => setSupplierForm({ ...supplierForm, phone: e.target.value })}
         />
-        <button type="submit" className="rounded bg-black px-4 py-2 text-white">
+        <button type="submit" className="btn-primary px-4 py-2">
           Add
         </button>
       </form>
@@ -165,9 +172,9 @@ export default function ProcurementPage() {
       {branchId && (
         <>
           {suggestions.length > 0 && (
-            <div className="mb-6 rounded-lg border p-4">
-              <h2 className="mb-2 font-medium">Reorder suggestions</h2>
-              <p className="mb-2 text-xs text-gray-500">
+            <div className="clinical-card mb-6 rounded-xl p-4">
+              <h2 className="mb-2 font-semibold text-[color:var(--secondary)]">Reorder suggestions</h2>
+              <p className="mb-2 text-xs text-[color:var(--muted)]">
                 Based on current stock vs. reorder level only — not full demand forecasting.
               </p>
               <ul className="text-sm">
@@ -181,11 +188,11 @@ export default function ProcurementPage() {
             </div>
           )}
 
-          <form onSubmit={handleCreatePO} className="mb-8 flex flex-col gap-3 rounded-lg border p-4">
-            <h2 className="font-medium">Create purchase order</h2>
+          <form onSubmit={handleCreatePO} className="clinical-card mb-8 flex flex-col gap-3 rounded-xl p-4">
+            <h2 className="font-semibold text-[color:var(--secondary)]">Create purchase order</h2>
             <select
               required
-              className="rounded border px-3 py-2"
+              className="field px-3 py-2"
               value={poSupplierId}
               onChange={(e) => setPoSupplierId(e.target.value)}
             >
@@ -198,7 +205,7 @@ export default function ProcurementPage() {
             </select>
             <select
               required
-              className="rounded border px-3 py-2"
+              className="field px-3 py-2"
               value={poProductId}
               onChange={(e) => setPoProductId(e.target.value)}
             >
@@ -213,7 +220,7 @@ export default function ProcurementPage() {
               type="number"
               min={1}
               placeholder="Quantity"
-              className="rounded border px-3 py-2"
+              className="field px-3 py-2"
               value={poQuantity}
               onChange={(e) => setPoQuantity(e.target.value)}
             />
@@ -221,26 +228,26 @@ export default function ProcurementPage() {
               type="number"
               min={0}
               placeholder="Unit cost"
-              className="rounded border px-3 py-2"
+              className="field px-3 py-2"
               value={poUnitCost}
               onChange={(e) => setPoUnitCost(e.target.value)}
             />
-            <button type="submit" className="rounded bg-black px-4 py-2 text-white">
+            <button type="submit" className="btn-primary px-4 py-2">
               Create purchase order
             </button>
           </form>
 
-          <h2 className="mb-3 font-medium">Purchase orders</h2>
+          <h2 className="mb-3 font-semibold text-[color:var(--secondary)]">Purchase orders</h2>
           {purchaseOrders.length === 0 ? (
-            <p className="text-gray-500">None yet.</p>
+            <p className="text-[color:var(--muted)]">None yet.</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {purchaseOrders.map((po) => (
-                <li key={po.id} className="rounded border p-3">
-                  <div className="font-medium">
-                    {po.supplier?.companyName} <span className="text-sm text-gray-500">({po.status})</span>
+                <li key={po.id} className="clinical-card rounded-xl p-4">
+                  <div className="font-semibold text-[color:var(--secondary)]">
+                    {po.supplier?.companyName} <span className="status-pill status-info">{po.status}</span>
                   </div>
-                  <ul className="text-sm text-gray-600">
+                  <ul className="mt-1 text-sm text-[color:var(--muted)]">
                     {po.items.map((item) => (
                       <li key={item.id}>
                         {item.product.name}: ordered {item.quantityOrdered}, received{" "}
@@ -248,14 +255,14 @@ export default function ProcurementPage() {
                       </li>
                     ))}
                   </ul>
-                  <div className="mt-2 flex gap-2">
+                  <div className="mt-3 flex gap-2">
                     {po.status === "SUBMITTED" && (
-                      <button onClick={() => handleApprove(po.id)} className="rounded bg-black px-3 py-1 text-sm text-white">
+                      <button onClick={() => handleApprove(po.id)} className="btn-primary px-3 py-1 text-sm">
                         Approve
                       </button>
                     )}
                     {(po.status === "APPROVED" || po.status === "PARTIALLY_RECEIVED") && (
-                      <button onClick={() => handleReceive(po)} className="rounded border px-3 py-1 text-sm">
+                      <button onClick={() => handleReceive(po)} className="btn-secondary px-3 py-1 text-sm">
                         Receive goods (full remaining qty)
                       </button>
                     )}
