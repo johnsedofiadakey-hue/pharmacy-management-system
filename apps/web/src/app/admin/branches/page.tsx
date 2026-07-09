@@ -119,7 +119,7 @@ export default function BranchesPage() {
 
       <form
         onSubmit={handleCreateBranch}
-        className="mb-8 grid gap-3 clinical-card rounded-lg p-5 md:grid-cols-2"
+        className="mb-8 grid gap-3 clinical-card rounded-xl p-5 md:grid-cols-2"
       >
         <h2 className="font-medium text-[color:var(--secondary)] md:col-span-2">Add branch</h2>
         <input
@@ -179,7 +179,7 @@ export default function BranchesPage() {
         </button>
       </form>
 
-      {error && <p className="mb-4 text-red-600">{error}</p>}
+      {error && <p className="mb-4 rounded bg-red-50 p-3 text-sm text-[color:var(--danger)]">{error}</p>}
 
       {loading ? (
         <p>Loading branches...</p>
@@ -188,12 +188,12 @@ export default function BranchesPage() {
       ) : (
         <ul className="mb-8 flex flex-col gap-2">
           {branches.map((branch) => (
-            <li key={branch.id} className="clinical-card flex items-center justify-between rounded-lg p-4">
+            <li key={branch.id} className="clinical-card flex items-center justify-between rounded-xl p-4">
               <div>
                 <div className="font-medium">
                   {branch.name}{" "}
                   {!branch.isActive && (
-                    <span className="text-xs text-red-600">(inactive)</span>
+                    <span className="status-pill status-warn">Inactive</span>
                   )}
                 </div>
                 <div className="text-sm text-[color:var(--muted)]">
@@ -217,7 +217,7 @@ export default function BranchesPage() {
         </ul>
       )}
 
-      <form onSubmit={handleInvite} className="flex flex-col gap-3 clinical-card rounded-lg p-4">
+      <form onSubmit={handleInvite} className="flex flex-col gap-3 clinical-card rounded-xl p-4">
         <h2 className="font-medium">Invite staff member</h2>
         <input
           required

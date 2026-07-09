@@ -222,28 +222,31 @@ export default function PosPage() {
 
   return (
     <>
-    <main className="mx-auto max-w-3xl p-8 print:hidden">
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">POS</h1>
+    <main className="page-wrap max-w-3xl py-8 print:hidden">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold uppercase text-[color:var(--primary)]">Branch Workspace</p>
+          <h1 className="mt-1 text-3xl font-semibold text-[color:var(--secondary)]">Point of sale</h1>
+        </div>
         <div className="flex items-center gap-2 text-sm">
-          {!isOnline && <span className="rounded bg-yellow-100 px-2 py-1 text-yellow-800">Offline</span>}
+          {!isOnline && <span className="status-pill status-warn">Offline</span>}
           {queuedCount > 0 && (
-            <span className="rounded bg-blue-100 px-2 py-1 text-blue-800">
+            <span className="status-pill status-info">
               {queuedCount} sale{queuedCount > 1 ? "s" : ""} queued
             </span>
           )}
         </div>
       </div>
 
-      {error && <p className="mb-4 text-red-600">{error}</p>}
-      {message && <p className="mb-4 text-green-700">{message}</p>}
+      {error && <p className="mb-4 rounded bg-red-50 p-3 text-sm text-[color:var(--danger)]">{error}</p>}
+      {message && <p className="mb-4 rounded bg-green-50 p-3 text-sm text-green-700">{message}</p>}
       {lastSale && (
-        <button onClick={() => window.print()} className="mb-4 rounded border px-3 py-1 text-sm">
+        <button onClick={() => window.print()} className="btn-secondary mb-4 px-3 py-1 text-sm">
           Print last receipt
         </button>
       )}
 
-      <div className="mb-6 flex flex-wrap items-center gap-3 clinical-card rounded-lg p-4">
+      <div className="clinical-card mb-6 flex flex-wrap items-center gap-3 rounded-xl p-4">
         <select
           className="field px-3 py-2"
           value={branchId}
@@ -277,7 +280,7 @@ export default function PosPage() {
           </>
         ) : (
           <>
-            <span className="text-sm text-green-700">Till open</span>
+            <span className="status-pill status-safe">Till open</span>
             <input
               type="number"
               className="w-32 field px-3 py-2"
@@ -311,7 +314,7 @@ export default function PosPage() {
               <li key={product.id}>
                 <button
                   onClick={() => addToCart(product)}
-                  className="w-full clinical-card rounded-lg p-3 text-left hover:bg-white"
+                  className="clinical-card w-full rounded-xl p-3 text-left transition hover:-translate-y-0.5"
                 >
                   <div className="font-medium">{product.name}</div>
                   <div className="text-sm text-[color:var(--muted)]">GHS {product.retailPrice ?? "—"}</div>
@@ -320,8 +323,8 @@ export default function PosPage() {
             ))}
           </ul>
 
-          <div className="clinical-card rounded-lg p-4">
-            <h2 className="mb-3 font-medium">Cart</h2>
+          <div className="clinical-card rounded-xl p-4">
+            <h2 className="mb-3 font-semibold text-[color:var(--secondary)]">Cart</h2>
             {cart.length === 0 ? (
               <p className="text-[color:var(--muted)]">No items yet.</p>
             ) : (

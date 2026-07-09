@@ -21,7 +21,7 @@ export function RequireAuth({
   }, [loading, user, router, redirectTo]);
 
   if (loading) {
-    return <p className="p-8 text-gray-500">Loading...</p>;
+    return <p className="p-8 text-[color:var(--muted)]">Loading...</p>;
   }
 
   if (!user) {
