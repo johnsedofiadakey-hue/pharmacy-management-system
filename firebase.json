@@ -7,6 +7,9 @@
       "predeploy": ["npm --prefix functions run vendor-db", "npm --prefix functions run build"]
     }
   ],
+  "hosting": {
+    "source": "apps/web"
+  },
   "firestore": {
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
