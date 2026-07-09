@@ -11,7 +11,7 @@ const schema = z.object({ organisationId: z.string().uuid() });
  * and nothing sensitive (cost price, supplier, internal stock levels) is
  * returned.
  */
-export const publicListProducts = onCall(async (request) => {
+export const publicListProducts = onCall({ invoker: "public" }, async (request) => {
   const parsed = schema.safeParse(request.data);
   if (!parsed.success) {
     throw new HttpsError("invalid-argument", parsed.error.message);
@@ -31,5 +31,10 @@ export const publicListProducts = onCall(async (request) => {
     orderBy: { name: "asc" },
   });
 
-  return { products };
+  return {
+    products: products.map((product) => ({
+      ...product,
+      retailPrice: product.retailPrice?.toString() ?? null,
+    })),
+  };
 });

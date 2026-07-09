@@ -5,7 +5,7 @@ import { prisma } from "@pharmacy-os/db";
 const schema = z.object({ organisationId: z.string().uuid(), productId: z.string().uuid() });
 
 /** Public — per-branch "in stock / low / out" for the storefront (BLUEPRINT.md §32). Exposes quantity buckets only, not exact counts or cost data. */
-export const publicCheckBranchAvailability = onCall(async (request) => {
+export const publicCheckBranchAvailability = onCall({ invoker: "public" }, async (request) => {
   const parsed = schema.safeParse(request.data);
   if (!parsed.success) {
     throw new HttpsError("invalid-argument", parsed.error.message);
