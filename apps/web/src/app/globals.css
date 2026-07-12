@@ -431,6 +431,84 @@ td,
   }
 }
 
+/* Heartbeat hero illustration — lub-dub double-pulse, transform-origin set
+   inline per element since it varies by placement in the SVG. */
+.heart-beat {
+  animation: heartbeat 1.3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes heartbeat {
+  0% {
+    transform: scale(1);
+  }
+  14% {
+    transform: scale(1.13);
+  }
+  28% {
+    transform: scale(1);
+  }
+  42% {
+    transform: scale(1.08);
+  }
+  60% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ECG waveform — an infinitely scrolling pulse line clipped to a window,
+   classic oscilloscope effect. */
+.ecg-scroll {
+  animation: ecg-scroll 2.4s linear infinite;
+}
+
+@keyframes ecg-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-220px);
+  }
+}
+
+.hero-glow-pulse {
+  animation: glow-pulse 1.3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes glow-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  14% {
+    opacity: 0.9;
+  }
+  28% {
+    opacity: 0.55;
+  }
+}
+
+.stetho-sway {
+  animation: stetho-sway 5s ease-in-out infinite;
+  transform-origin: 340px 130px;
+}
+
+@keyframes stetho-sway {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(2.5deg);
+  }
+}
+
 @media print {
   body {
     background: white;

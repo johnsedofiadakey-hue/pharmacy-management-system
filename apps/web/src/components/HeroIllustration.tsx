@@ -1,6 +1,8 @@
 /**
- * Pharmaceutical hero illustration - clean, professional, Ghana-focused
- * A medicine bottle, capsules, and a subtle Ghana map outline in the background
+ * Health-focused hero illustration — a beating heart with a stethoscope
+ * draped over it and a live ECG pulse line scrolling beneath. Pure inline
+ * SVG (no external image), animated with CSS so it respects
+ * prefers-reduced-motion via the global override.
  */
 export function HeroIllustration() {
   return (
@@ -8,97 +10,90 @@ export function HeroIllustration() {
       viewBox="0 0 480 480"
       className="mx-auto w-full max-w-md"
       role="img"
-      aria-label="Pharmaceutical illustration featuring medicine bottle and capsules"
+      aria-label="Animated illustration of a beating heart with a stethoscope, representing pharmacist-reviewed health care"
     >
       <defs>
-        <linearGradient id="bottleGradient" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#ffffff" />
-          <stop offset="100%" stopColor="#eafaf7" />
-        </linearGradient>
-        <linearGradient id="pillGradient" x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id="heartGradient" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="var(--primary)" />
           <stop offset="100%" stopColor="var(--primary-strong)" />
         </linearGradient>
-        <radialGradient id="shadow" cx="50%" cy="50%" r="50%">
-          <stop offset="70%" stopColor="var(--primary)" stopOpacity="0.1" />
+        <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.28" />
           <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
         </radialGradient>
-        <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur stdDeviation="8" result="blur" />
-          <feComposite in="SourceGraphic" in2="blur" operator="over" />
-        </filter>
+        <clipPath id="ecgClip">
+          <rect x="70" y="325" width="340" height="56" rx="8" />
+        </clipPath>
       </defs>
 
-      {/* Subtle background shadow */}
-      <circle cx="240" cy="400" r="180" fill="url(#shadow)" />
+      {/* Ambient glow, pulses in time with the heartbeat */}
+      <circle cx="240" cy="220" r="170" fill="url(#glow)" className="hero-glow-pulse" />
 
-      {/* Medicine bottle */}
-      <g className="hero-float">
-        {/* Bottle body */}
-        <rect x="200" y="140" width="80" height="120" rx="12" fill="url(#bottleGradient)" stroke="var(--border)" strokeWidth="2" />
-        
-        {/* Bottle cap */}
-        <rect x="210" y="120" width="60" height="25" rx="8" fill="var(--primary)" />
-        <rect x="215" y="110" width="50" height="12" rx="4" fill="var(--primary-strong)" />
-        
-        {/* Label */}
-        <rect x="210" y="170" width="60" height="40" rx="4" fill="var(--primary-soft)" />
-        <text x="240" y="190" textAnchor="middle" fill="var(--primary-strong)" fontSize="14" fontWeight="bold">
-          NEXUS
-        </text>
-        <text x="240" y="204" textAnchor="middle" fill="var(--primary)" fontSize="10">
-          PHARMA
-        </text>
-        
-        {/* Medicine level indicator */}
-        <rect x="215" y="220" width="50" height="8" rx="4" fill="var(--primary)" opacity="0.3" />
+      {/* Faint dot grid, medical-monitor texture */}
+      <g opacity="0.25">
+        {Array.from({ length: 6 }).map((_, row) =>
+          Array.from({ length: 10 }).map((_, col) => (
+            <circle key={`${row}-${col}`} cx={70 + col * 36} cy={60 + row * 14} r="1.4" fill="var(--primary)" />
+          ))
+        )}
       </g>
 
-      {/* Capsules orbiting */}
-      <g className="hero-orbit">
-        {/* Red capsule */}
-        <g>
-          <rect x="80" y="160" width="32" height="12" rx="6" fill="var(--coral)" />
-          <rect x="88" y="162" width="16" height="8" rx="4" fill="var(--coral)" opacity="0.6" />
-        </g>
-        
-        {/* Blue capsule */}
-        <g>
-          <rect x="368" y="280" width="32" height="12" rx="6" fill="var(--sky)" />
-          <rect x="376" y="282" width="16" height="8" rx="4" fill="var(--sky)" opacity="0.6" />
-        </g>
-        
-        {/* White capsule */}
-        <g>
-          <rect x="180" y="90" width="32" height="12" rx="6" fill="white" stroke="var(--border)" strokeWidth="1" />
-          <rect x="188" y="92" width="16" height="8" rx="4" fill="white" stroke="var(--border)" strokeWidth="1" />
-        </g>
-        
-        {/* Yellow capsule */}
-        <g>
-          <rect x="310" y="350" width="32" height="12" rx="6" fill="var(--sun)" />
-          <rect x="318" y="352" width="16" height="8" rx="4" fill="var(--sun)" opacity="0.6" />
+      {/* Stethoscope draped from upper right, chestpiece resting on the heart */}
+      <g className="stetho-sway">
+        <rect x="283" y="44" width="15" height="20" rx="7" fill="var(--secondary)" />
+        <rect x="323" y="38" width="15" height="20" rx="7" fill="var(--secondary)" />
+        <path
+          d="M290,55 C280,75 288,95 315,105 M330,50 C345,68 340,90 315,105 M315,105 C320,140 335,175 310,210 C295,230 285,245 288,262"
+          fill="none"
+          stroke="var(--secondary)"
+          strokeWidth="7"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <circle cx="288" cy="270" r="16" fill="var(--secondary)" />
+        <circle cx="288" cy="270" r="8" fill="var(--surface-muted)" />
+      </g>
+
+      {/* Beating heart */}
+      <g className="heart-beat">
+        <path
+          d="M240,290 C240,290 150,225 150,165 C150,130 178,108 208,120 C222,126 233,140 240,155 C247,140 258,126 272,120 C302,108 330,130 330,165 C330,225 240,290 240,290 Z"
+          fill="url(#heartGradient)"
+        />
+        <path
+          d="M182,150 C182,168 196,186 214,198"
+          fill="none"
+          stroke="white"
+          strokeOpacity="0.35"
+          strokeWidth="6"
+          strokeLinecap="round"
+        />
+      </g>
+
+      {/* ECG pulse line, scrolling continuously within its clipped window */}
+      <rect x="70" y="325" width="340" height="56" rx="8" fill="var(--surface-muted)" opacity="0.6" />
+      <g clipPath="url(#ecgClip)">
+        <g transform="translate(80,353)">
+          <path
+            className="ecg-scroll"
+            d="M0,0 L35,0 L45,-6 L55,8 L65,-30 L75,20 L85,0 L110,0 L145,0 L155,-6 L165,8 L175,-30 L185,20 L195,0 L220,0 L255,0 L265,-6 L275,8 L285,-30 L295,20 L305,0 L330,0 L365,0 L375,-6 L385,8 L395,-30 L405,20 L415,0 L440,0"
+            fill="none"
+            stroke="var(--primary)"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </g>
       </g>
 
-      {/* Tablets spilling from bottle */}
-      <g className="hero-float" transform="translate(-5, 10)">
-        <rect x="275" y="220" width="24" height="10" rx="5" fill="var(--primary-soft)" stroke="var(--primary)" strokeWidth="1" />
-        <path d="M282 225 L291 225" stroke="var(--primary)" strokeWidth="1" />
-        
-        <rect x="270" y="240" width="24" height="10" rx="5" fill="var(--primary-soft)" stroke="var(--primary)" strokeWidth="1" />
-        <path d="M277 245 L286 245" stroke="var(--primary)" strokeWidth="1" />
+      {/* Small accent dots, cross motif for a medical touch */}
+      <g fill="var(--coral)" opacity="0.85">
+        <circle cx="110" cy="230" r="6" />
       </g>
-
-      {/* Subtle Ghana outline in background (abstract) */}
-      <path
-        d="M120 420 L140 400 L180 405 L200 410 L220 400 L240 405 L280 395 L300 400 L340 390 L360 400 L380 395 L400 405 L420 400 L440 410 L460 400"
-        fill="none"
-        stroke="var(--primary)"
-        strokeWidth="1"
-        opacity="0.1"
-        strokeDasharray="2 2"
-      />
+      <g fill="var(--sun)" opacity="0.85">
+        <circle cx="390" cy="240" r="5" />
+      </g>
+      <path d="M120,110 h14 M127,103 v14" stroke="var(--sky)" strokeWidth="3" strokeLinecap="round" opacity="0.7" />
     </svg>
   );
 }
