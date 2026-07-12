@@ -1,21 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft, Search, MapPin, ShoppingBag, ShoppingCart, Pill, HeartPulse, Sparkles, Baby, Stethoscope, Phone, UserCircle } from "lucide-react";
+import { Logo } from "@/components/Logo";
 import { useAuth } from "@/lib/firebase/authContext";
 import {
   publicListProducts,
   publicListBranches,
-  listMyAddresses,
   placeOrder,
   initializePaystackPayment,
   type PublicProduct,
   type PublicBranch,
-  type CustomerAddressRow,
 } from "@/lib/firebase/callables";
+import { useStoredCart } from "@/lib/useStoredCart";
+import { Alert, Badge, Button, EmptyState, Select, SkeletonGrid } from "@/components/ui";
+import { Footer } from "@/components/Footer";
 
-type CartLine = { productId: string; name: string; quantity: number; unitPrice: number };
 type StorePaymentMethod = "CASH" | "MOMO" | "CARD" | "BANK_TRANSFER";
 
 const ORG_ID = process.env.NEXT_PUBLIC_ORGANISATION_ID ?? "";
@@ -32,6 +34,16 @@ function productCategory(product: PublicProduct): string {
   return "All";
 }
 
+const categoryIcon: Record<string, typeof Pill> = {
+  All: Pill,
+  "Pain & fever": Pill,
+  "Cold & flu": Stethoscope,
+  Vitamins: HeartPulse,
+  "Baby care": Baby,
+  "Personal care": Sparkles,
+  "Prescription review": Stethoscope,
+};
+
 function distanceKm(a: { lat: number; lng: number }, branch: PublicBranch): number | null {
   if (branch.gpsLat == null || branch.gpsLng == null) return null;
   const earthKm = 6371;
@@ -45,34 +57,36 @@ function distanceKm(a: { lat: number; lng: number }, branch: PublicBranch): numb
   return earthKm * 2 * Math.atan2(Math.sqrt(hav), Math.sqrt(1 - hav));
 }
 
-// Phase 9 skeleton — public browsing needs no sign-in; checkout does
-// (placeOrder is customer-auth-gated), so an unauthenticated checkout
-// attempt redirects to /store/signup.
 export default function StorePage() {
   const { user } = useAuth();
   const router = useRouter();
   const [products, setProducts] = useState<PublicProduct[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
   const [branches, setBranches] = useState<PublicBranch[]>([]);
-  const [addresses, setAddresses] = useState<CustomerAddressRow[]>([]);
-  const [cart, setCart] = useState<CartLine[]>([]);
+  const { cart, addLine, setQuantity, removeLine, clearCart, total } = useStoredCart("store_cart_v1");
   const [branchId, setBranchId] = useState("");
   const [fulfilmentType, setFulfilmentType] = useState<"PICKUP" | "DELIVERY">("PICKUP");
-  const [deliveryAddressId, setDeliveryAddressId] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<StorePaymentMethod>("MOMO");
+  const [paymentMethod, setPaymentMethod] = useState<StorePaymentMethod>("CASH");
+  const [guestPhone, setGuestPhone] = useState("");
+  const [guestName, setGuestName] = useState("");
   const [category, setCategory] = useState("All");
-  const [nearestMessage, setNearestMessage] = useState("Choose a branch or use location for faster fulfilment.");
+  const [search, setSearch] = useState("");
+  const [nearestMessage, setNearestMessage] = useState<string | null>(null);
   const [distances, setDistances] = useState<Record<string, number>>({});
+  const [placing, setPlacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!ORG_ID) {
       setError("NEXT_PUBLIC_ORGANISATION_ID is not configured for this deployment.");
+      setLoadingProducts(false);
       return;
     }
     publicListProducts(ORG_ID)
       .then((r) => setProducts(r.data.products))
-      .catch(() => setError("Products are not available right now. Please try again shortly or contact a branch."));
+      .catch(() => setError("Products are not available right now. Please try again shortly or contact a branch."))
+      .finally(() => setLoadingProducts(false));
     publicListBranches(ORG_ID)
       .then((r) => {
         setBranches(r.data.branches);
@@ -80,41 +94,36 @@ export default function StorePage() {
         const fallbackBranchId = r.data.branches[0]?.id ?? "";
         setBranchId(r.data.branches.some((branch) => branch.id === savedBranchId) ? savedBranchId ?? "" : fallbackBranchId);
       })
-      .catch(() => undefined);
+      .catch((err) => {
+        console.error("Failed to load branches:", err);
+        setError("Could not load branches. Please check your connection or contact support.");
+      });
   }, []);
 
-  useEffect(() => {
-    if (!user) return;
-    listMyAddresses()
-      .then((r) => setAddresses(r.data.addresses))
-      .catch(() => undefined);
-  }, [user]);
-
   function addToCart(product: PublicProduct) {
-    if (product.prescriptionClassification === "RESTRICTED") {
-      setError(`"${product.name}" requires a prescription — please visit a branch.`);
-      return;
-    }
-    setCart((prev) => {
-      const existing = prev.find((l) => l.productId === product.id);
-      if (existing) {
-        return prev.map((l) => (l.productId === product.id ? { ...l, quantity: l.quantity + 1 } : l));
-      }
-      return [
-        ...prev,
-        { productId: product.id, name: product.name, quantity: 1, unitPrice: Number(product.retailPrice ?? 0) },
-      ];
-    });
+    addLine({ productId: product.id, name: product.name, unitPrice: Number(product.retailPrice ?? 0) });
   }
 
-  const total = cart.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0);
-  const visibleProducts = products
-    .filter((product) => category === "All" || productCategory(product) === category)
-    .sort((a, b) => {
-      if (a.prescriptionClassification === "OTC" && b.prescriptionClassification !== "OTC") return -1;
-      if (a.prescriptionClassification !== "OTC" && b.prescriptionClassification === "OTC") return 1;
-      return a.name.localeCompare(b.name);
-    });
+  const visibleProducts = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return products
+      .filter((product) => category === "All" || productCategory(product) === category)
+      .filter(
+        (product) =>
+          !q ||
+          product.name.toLowerCase().includes(q) ||
+          product.genericName?.toLowerCase().includes(q) ||
+          product.brandName?.toLowerCase().includes(q)
+      )
+      .sort((a, b) => {
+        if (a.prescriptionClassification === "OTC" && b.prescriptionClassification !== "OTC") return -1;
+        if (a.prescriptionClassification !== "OTC" && b.prescriptionClassification === "OTC") return 1;
+        return a.name.localeCompare(b.name);
+      });
+  }, [products, category, search]);
+
+  const cartCount = cart.reduce((sum, l) => sum + l.quantity, 0);
+  const selectedBranch = branches.find((b) => b.id === branchId);
 
   function selectNearestBranch() {
     if (!navigator.geolocation) {
@@ -139,7 +148,7 @@ export default function StorePage() {
         setDistances(Object.fromEntries(ranked.map((item) => [item.branch.id, item.distance])));
         setBranchId(ranked[0].branch.id);
         window.localStorage.setItem("selectedBranchId", ranked[0].branch.id);
-        setNearestMessage(`${ranked[0].branch.name} is closest, about ${ranked[0].distance.toFixed(1)} km away.`);
+        setNearestMessage(`${ranked[0].branch.name} is closest — about ${ranked[0].distance.toFixed(1)} km away.`);
       },
       () => setNearestMessage("Location permission was not granted. Please choose manually."),
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 300000 }
@@ -147,232 +156,377 @@ export default function StorePage() {
   }
 
   async function handleCheckout() {
-    if (!user) {
-      router.push("/store/signup");
-      return;
-    }
     setError(null);
     setMessage(null);
+
+    if (!user && !guestPhone.trim()) {
+      setError("Enter a phone number so the branch can reach you.");
+      return;
+    }
+
+    setPlacing(true);
     try {
       const result = await placeOrder({
         branchId,
         fulfilmentType,
-        deliveryAddressId: fulfilmentType === "DELIVERY" ? deliveryAddressId : undefined,
         paymentMethod,
         items: cart.map((l) => ({ productId: l.productId, quantity: l.quantity })),
+        guestPhone: user ? undefined : guestPhone.trim(),
+        guestName: user ? undefined : guestName.trim() || undefined,
       });
 
       if (paymentMethod !== "CASH") {
         const paystack = await initializePaystackPayment({
           orderId: result.data.order.id,
-          callbackUrl: `${window.location.origin}/store/account`,
+          callbackUrl: `${window.location.origin}/store?placed=true`,
         });
         if (paystack.data.authorizationUrl) {
+          clearCart();
           window.location.href = paystack.data.authorizationUrl;
           return;
         }
       }
 
-      setMessage(`Order placed! Total GHS ${result.data.order.total}`);
-      setCart([]);
+      setMessage(`Order placed! Your order ID: ${result.data.order.id.slice(0, 8)}. The branch will contact you.`);
+      clearCart();
+      setGuestPhone("");
+      setGuestName("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Checkout failed.");
+    } finally {
+      setPlacing(false);
     }
   }
 
   return (
     <main className="app-shell min-h-screen pb-12">
-      <section className="border-b border-[color:var(--border)] bg-white/82">
-        <div className="page-wrap flex items-center justify-between py-5">
-          <Link href="/" className="text-xl font-semibold text-[color:var(--secondary)]">
-            Nexus Pharma
-          </Link>
-          {user ? (
-            <Link href="/store/account" className="btn-secondary px-4 py-2 text-sm">
-              My account
+      <header className="sticky top-0 z-30 border-b border-[color:var(--border)] bg-white/95 backdrop-blur">
+        <div className="page-wrap flex flex-wrap items-center gap-3 py-3.5 md:flex-nowrap">
+          <div className="flex items-center gap-2">
+            <Link href="/" className="btn-ghost grid size-9 place-items-center rounded-full" aria-label="Back to home">
+              <ArrowLeft size={18} />
             </Link>
-          ) : (
-            <div className="flex gap-3 text-sm">
-              <Link href="/store/login" className="btn-secondary px-4 py-2">
-                Log in
+            <Logo size="sm" />
+          </div>
+          <div className="field-pill order-last flex w-full items-center gap-2 px-4 py-2.5 md:order-none md:mx-4 md:flex-1">
+            <Search size={17} className="shrink-0 text-[color:var(--muted)]" />
+            <input
+              type="search"
+              placeholder="Search medicines, vitamins, brands..."
+              aria-label="Search products"
+              className="w-full bg-transparent text-sm outline-none placeholder:text-[color:var(--muted)]"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <div className="ml-auto flex shrink-0 items-center gap-3 text-sm">
+            {user && (
+              <Link href="/store/account" className="btn-ghost inline-flex items-center gap-1.5 px-3 py-2 text-xs">
+                <UserCircle size={16} />
+                Account
               </Link>
-              <Link href="/store/signup" className="btn-primary px-4 py-2">
-                Sign up
-              </Link>
-            </div>
-          )}
+            )}
+            <span className="relative text-[color:var(--secondary)] sm:inline-flex">
+              <ShoppingCart size={22} />
+              {cartCount > 0 && (
+                <span className="absolute -right-1.5 -top-1.5 grid size-4 place-items-center rounded-full bg-[color:var(--primary)] text-[10px] font-bold text-white">
+                  {cartCount}
+                </span>
+              )}
+            </span>
+          </div>
         </div>
-      </section>
+      </header>
 
-      <section className="page-wrap grid gap-8 py-10 lg:grid-cols-[1fr_380px]">
+      {message && (
+        <div className="page-wrap pt-4">
+          <Alert tone="success">{message}</Alert>
+        </div>
+      )}
+
+      <section className="page-wrap grid items-start gap-6 py-8 lg:grid-cols-[1fr_380px]">
         <div className="min-w-0">
-          <div className="store-spark w-full rounded-2xl p-6 text-white">
-            <p className="text-sm font-semibold uppercase">Storefront</p>
-            <h1 className="font-display mt-2 max-w-2xl text-4xl font-semibold">
-              Fast pharmacy checkout from the branch closest to you.
-            </h1>
-            <p className="mt-3 max-w-2xl text-white/82">
-              Shop essentials, get pharmacist-led support, and move from cart to checkout in a few focused steps.
-            </p>
-            <div className="mt-5 flex flex-wrap gap-2">
-              <button type="button" onClick={selectNearestBranch} className="rounded bg-white px-4 py-2 text-sm font-semibold text-[color:var(--primary)]">
-                Use my location
-              </button>
-              <span className="status-pill max-w-full bg-white/18 text-white">{nearestMessage}</span>
+          {error && <Alert tone="error" className="mb-4">{error}</Alert>}
+
+          {/* Branch strip */}
+          <div className="clinical-card flex flex-wrap items-center gap-3 p-4">
+            <MapPin size={18} className="shrink-0 text-[color:var(--primary)]" />
+            <div className="min-w-0 flex-1 text-sm">
+              <span className="font-semibold text-[color:var(--secondary)]">
+                {selectedBranch ? `Shopping from ${selectedBranch.name}` : "Choose your branch"}
+              </span>
+              {nearestMessage && <span className="ml-2 text-[color:var(--muted)]">{nearestMessage}</span>}
             </div>
+            <Button variant="secondary" size="sm" onClick={selectNearestBranch}>
+              Use my location
+            </Button>
           </div>
 
-          {error && <p className="mt-5 rounded bg-red-50 p-3 text-sm text-[color:var(--danger)]">{error}</p>}
-          {message && <p className="mt-5 rounded bg-green-50 p-3 text-sm text-green-700">{message}</p>}
-
-          <div className="mt-6 flex max-w-full gap-2 overflow-x-auto pb-2">
-            {categories.map((item) => (
-              <button
-                key={item}
-                type="button"
-                onClick={() => setCategory(item)}
-                className={item === category ? "btn-primary shrink-0 px-4 py-2 text-sm" : "btn-secondary shrink-0 px-4 py-2 text-sm"}
-              >
-                {item}
-              </button>
-            ))}
+          {/* Category chips */}
+          <div className="mt-5 flex max-w-full gap-2 overflow-x-auto pb-2" role="tablist" aria-label="Product categories">
+            {categories.map((item) => {
+              const Icon = categoryIcon[item] ?? Pill;
+              return (
+                <button
+                  key={item}
+                  type="button"
+                  role="tab"
+                  aria-selected={item === category}
+                  onClick={() => setCategory(item)}
+                  className={
+                    item === category
+                      ? "btn-primary inline-flex shrink-0 items-center gap-1.5 px-4 py-2 text-sm"
+                      : "btn-secondary inline-flex shrink-0 items-center gap-1.5 px-4 py-2 text-sm"
+                  }
+                >
+                  <Icon size={14} /> {item}
+                </button>
+              );
+            })}
           </div>
 
-          {visibleProducts.length === 0 ? (
-            <div className="clinical-card mt-8 rounded-xl p-5">
-              <p className="font-semibold text-[color:var(--secondary)]">Catalogue is being prepared.</p>
-              <p className="mt-2 text-sm text-[color:var(--muted)]">
-                Products will appear here after branch stock and public pricing are published.
-              </p>
+          {/* Product grid */}
+          {loadingProducts ? (
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              <SkeletonGrid count={6} itemClassName="h-36" />
+            </div>
+          ) : visibleProducts.length === 0 ? (
+            <div className="mt-6">
+              <EmptyState
+                title={search ? `No products match "${search}"` : "Catalogue is being prepared."}
+                hint={
+                  search
+                    ? "Try a generic name (e.g. paracetamol) or a different category."
+                    : "Products will appear here after branch stock and public pricing are published."
+                }
+                action={search ? <Button variant="secondary" size="sm" onClick={() => setSearch("")}>Clear search</Button> : undefined}
+              />
             </div>
           ) : (
-            <ul className="mt-8 grid gap-3 sm:grid-cols-2">
-              {visibleProducts.map((product) => (
-                <li key={product.id}>
-                  <button
-                    onClick={() => addToCart(product)}
-                    className="clinical-card min-h-32 w-full rounded-xl p-4 text-left transition hover:-translate-y-0.5"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="font-semibold text-[color:var(--secondary)]">{product.name}</div>
-                      <span className={product.prescriptionClassification === "OTC" ? "status-pill status-safe" : "status-pill status-warn"}>
-                        {product.prescriptionClassification === "OTC" ? "Quick add" : "Rx review"}
-                      </span>
+            <ul className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {visibleProducts.map((product) => {
+                const restricted = product.prescriptionClassification === "RESTRICTED";
+                const Icon = categoryIcon[productCategory(product)] ?? Pill;
+                return (
+                  <li key={product.id} className="min-w-0">
+                    <div className="product-card flex h-full flex-col overflow-hidden">
+                      <div className="product-media relative">
+                        <span className="absolute right-3 top-3">
+                          <Badge tone={product.prescriptionClassification === "OTC" ? "safe" : "warn"}>
+                            {product.prescriptionClassification === "OTC" ? "OTC" : "Rx"}
+                          </Badge>
+                        </span>
+                        <Icon size={40} className="text-[color:var(--primary)]" />
+                      </div>
+                      <div className="flex flex-1 flex-col p-4">
+                        <div className="truncate font-semibold text-[color:var(--secondary)]">{product.name}</div>
+                        {(product.genericName || product.brandName) && (
+                          <div className="truncate text-xs text-[color:var(--muted)]">
+                            {product.genericName ?? product.brandName}
+                          </div>
+                        )}
+                        <div className="mt-auto flex items-end justify-between gap-2 pt-4">
+                          <div className="text-lg font-bold tabular-nums text-[color:var(--secondary)]">
+                            {product.retailPrice != null ? `GHS ${product.retailPrice}` : "Ask in branch"}
+                          </div>
+                          {restricted ? (
+                            <span className="max-w-32 text-right text-xs font-medium text-[color:var(--warning)]">
+                              Rx required — visit a branch
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => addToCart(product)}
+                              aria-label={`Add ${product.name} to cart`}
+                              className="cart-fab size-9"
+                            >
+                              <ShoppingCart size={16} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <div className="mt-2 text-xs font-semibold uppercase text-[color:var(--primary)]">
-                      {productCategory(product)}
-                    </div>
-                    <div className="mt-3 text-sm text-[color:var(--muted)]">
-                      GHS {product.retailPrice ?? "—"}
-                      {product.prescriptionClassification === "RESTRICTED" && (
-                        <span className="ml-2 text-[color:var(--danger)]">Rx required</span>
-                      )}
-                    </div>
-                  </button>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
 
-        <aside className="clinical-card h-fit min-w-0 rounded-2xl p-5 lg:sticky lg:top-6">
-          <div className="mb-3 flex items-start justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold text-[color:var(--secondary)]">Checkout</h2>
-              <p className="text-xs text-[color:var(--muted)]">Branch, delivery, payment. Done.</p>
+        {/* Cart / checkout */}
+        <aside className="clinical-card h-fit min-w-0 p-5 lg:sticky lg:top-20">
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <ShoppingBag size={18} className="text-[color:var(--primary)]" />
+              <h2 className="text-lg font-semibold text-[color:var(--secondary)]">Your order</h2>
             </div>
-            <span className="status-pill status-safe">{cart.length} item{cart.length === 1 ? "" : "s"}</span>
+            <Badge tone={cartCount > 0 ? "safe" : "neutral"}>
+              {cartCount} item{cartCount === 1 ? "" : "s"}
+            </Badge>
           </div>
+
           {cart.length === 0 ? (
-            <p className="text-sm text-[color:var(--muted)]">No items yet.</p>
+            <p className="text-sm text-[color:var(--muted)]">
+              Your cart is empty — browse the catalogue and add products to get started.
+            </p>
           ) : (
-            <ul className="mb-3 flex flex-col gap-1 text-sm">
+            <ul className="mb-4 flex flex-col gap-2.5 text-sm">
               {cart.map((l) => (
-                <li key={l.productId} className="flex justify-between gap-3">
-                  <span>
-                    {l.name} × {l.quantity}
-                  </span>
-                  <span>GHS {(l.unitPrice * l.quantity).toFixed(2)}</span>
+                <li key={l.productId} className="flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-medium text-[color:var(--secondary)]">{l.name}</div>
+                    <div className="text-xs tabular-nums text-[color:var(--muted)]">
+                      GHS {(l.unitPrice * l.quantity).toFixed(2)}
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <button
+                      type="button"
+                      aria-label={`Decrease quantity of ${l.name}`}
+                      onClick={() => setQuantity(l.productId, l.quantity - 1)}
+                      className="btn-secondary grid size-8 place-items-center text-base leading-none"
+                    >
+                      −
+                    </button>
+                    <span className="w-7 text-center font-semibold tabular-nums">{l.quantity}</span>
+                    <button
+                      type="button"
+                      aria-label={`Increase quantity of ${l.name}`}
+                      onClick={() => setQuantity(l.productId, l.quantity + 1)}
+                      className="btn-secondary grid size-8 place-items-center text-base leading-none"
+                    >
+                      +
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Remove ${l.name} from cart`}
+                      onClick={() => removeLine(l.productId)}
+                      className="ml-1 grid size-8 place-items-center rounded-lg text-[color:var(--muted)] hover:bg-[color:var(--danger-soft)] hover:text-[color:var(--danger)]"
+                    >
+                      ×
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
           )}
 
-          <select
-            className="field mb-2 w-full px-3 py-3"
-            value={branchId}
-            onChange={(e) => {
-              setBranchId(e.target.value);
-              window.localStorage.setItem("selectedBranchId", e.target.value);
-            }}
-          >
-            <option value="">Select branch...</option>
-            {branches.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-                {distances[b.id] != null ? ` • ${distances[b.id].toFixed(1)} km` : ""}
-              </option>
-            ))}
-          </select>
-
-          <div className="mb-3 grid grid-cols-2 gap-2 text-sm">
-            <label className="field px-3 py-2">
-              <input
-                type="radio"
-                checked={fulfilmentType === "PICKUP"}
-                onChange={() => setFulfilmentType("PICKUP")}
-              />{" "}
-              Pickup
+          <div className="flex flex-col gap-3 border-t border-[color:var(--border)] pt-4">
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-semibold uppercase tracking-wide text-[color:var(--muted)]">Branch</span>
+              <Select
+                value={branchId}
+                onChange={(e) => {
+                  setBranchId(e.target.value);
+                  window.localStorage.setItem("selectedBranchId", e.target.value);
+                }}
+              >
+                <option value="">Select branch...</option>
+                {branches.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                    {distances[b.id] != null ? ` • ${distances[b.id].toFixed(1)} km` : ""}
+                  </option>
+                ))}
+              </Select>
             </label>
-            <label className="field px-3 py-2">
-              <input
-                type="radio"
-                checked={fulfilmentType === "DELIVERY"}
-                onChange={() => setFulfilmentType("DELIVERY")}
-              />{" "}
-              Delivery
-            </label>
-          </div>
 
-          {fulfilmentType === "DELIVERY" && (
-            <select
-              className="field mb-2 w-full px-3 py-3"
-              value={deliveryAddressId}
-              onChange={(e) => setDeliveryAddressId(e.target.value)}
+            <div>
+              <span className="text-xs font-semibold uppercase tracking-wide text-[color:var(--muted)]">Fulfilment</span>
+              <div className="mt-1.5 grid grid-cols-2 gap-2 text-sm">
+                {(["PICKUP", "DELIVERY"] as const).map((type) => (
+                  <label
+                    key={type}
+                    className={`field flex cursor-pointer items-center justify-center gap-2 px-3 py-2.5 font-medium ${
+                      fulfilmentType === type ? "border-[color:var(--primary)] bg-[color:var(--primary-soft)]" : ""
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="fulfilment"
+                      className="sr-only"
+                      checked={fulfilmentType === type}
+                      onChange={() => setFulfilmentType(type)}
+                    />
+                    {type === "PICKUP" ? "Pickup" : "Delivery"}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-semibold uppercase tracking-wide text-[color:var(--muted)]">Payment</span>
+              <Select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value as StorePaymentMethod)}>
+                <option value="CASH">Cash on pickup/delivery</option>
+                {!user && (
+                  <>
+                    <option disabled>— Sign in for online payments —</option>
+                    <option value="MOMO" disabled>Mobile money</option>
+                    <option value="CARD" disabled>Card payment</option>
+                    <option value="BANK_TRANSFER" disabled>Bank transfer</option>
+                  </>
+                )}
+                {user && (
+                  <>
+                    <option value="MOMO">Mobile money</option>
+                    <option value="CARD">Card payment</option>
+                    <option value="BANK_TRANSFER">Bank transfer</option>
+                  </>
+                )}
+              </Select>
+              {!user && (
+                <p className="text-xs text-[color:var(--muted)]">
+                  Online payments require an account. Cash works for everyone.
+                </p>
+              )}
+            </label>
+
+            {!user && cart.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-[color:var(--muted)]">
+                    <Phone size={12} className="inline mr-1" />Phone number
+                  </span>
+                  <input
+                    type="tel"
+                    placeholder="e.g. 054 123 4567"
+                    className="field px-3 py-2.5 text-sm"
+                    value={guestPhone}
+                    onChange={(e) => setGuestPhone(e.target.value)}
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-[color:var(--muted)]">
+                    Name (optional)
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="Your name"
+                    className="field px-3 py-2.5 text-sm"
+                    value={guestName}
+                    onChange={(e) => setGuestName(e.target.value)}
+                  />
+                </label>
+              </div>
+            )}
+
+            <div className="flex justify-between text-base font-bold text-[color:var(--secondary)]">
+              <span>Total</span>
+              <span className="tabular-nums">GHS {total.toFixed(2)}</span>
+            </div>
+
+            <Button
+              size="lg"
+              onClick={handleCheckout}
+              disabled={placing || cart.length === 0 || !branchId}
             >
-              <option value="">Select delivery address...</option>
-              {addresses.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.label}
-                </option>
-              ))}
-            </select>
-          )}
-
-          <select
-            className="field mb-2 w-full px-3 py-3"
-            value={paymentMethod}
-            onChange={(e) => setPaymentMethod(e.target.value as StorePaymentMethod)}
-          >
-            <option value="MOMO">Mobile money via Paystack</option>
-            <option value="CARD">Card via Paystack</option>
-            <option value="BANK_TRANSFER">Bank transfer via Paystack</option>
-            <option value="CASH">Cash on pickup/delivery</option>
-          </select>
-
-          <div className="mb-3 flex justify-between font-medium">
-            <span>Total</span>
-            <span>GHS {total.toFixed(2)}</span>
+              {placing ? "Placing order..." : "Place order"}
+            </Button>
           </div>
-          <button
-            onClick={handleCheckout}
-            disabled={cart.length === 0 || !branchId || (fulfilmentType === "DELIVERY" && !deliveryAddressId)}
-            className="btn-primary w-full px-4 py-3 disabled:opacity-50"
-          >
-            {user ? "Place order" : "Sign up to check out"}
-          </button>
         </aside>
       </section>
+
+      <Footer />
     </main>
   );
 }

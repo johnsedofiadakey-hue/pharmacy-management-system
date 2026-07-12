@@ -1,4 +1,5 @@
-import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { HttpsError } from "firebase-functions/v2/https";
+import { onCall } from "../lib/onCall";
 import { z } from "zod";
 import { prisma, PermissionResource, PermissionAction, BatchRecallStatus } from "@pharmacy-os/db";
 import { getCallerUser } from "../lib/authContext";

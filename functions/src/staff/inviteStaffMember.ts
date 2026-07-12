@@ -1,4 +1,5 @@
-import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { HttpsError } from "firebase-functions/v2/https";
+import { onCall } from "../lib/onCall";
 import { z } from "zod";
 import { prisma, PermissionResource, PermissionAction } from "@pharmacy-os/db";
 import { auth } from "../admin";
@@ -10,7 +11,7 @@ const inviteStaffMemberSchema = z.object({
   name: z.string().min(1),
   email: z.string().email(),
   roleId: z.string().uuid(),
-  branchId: z.string().uuid().nullable(),
+  branchId: z.string().uuid().nullish(),
 });
 
 /**
@@ -30,7 +31,7 @@ export const inviteStaffMember = onCall(async (request) => {
   if (!parsed.success) {
     throw new HttpsError("invalid-argument", parsed.error.message);
   }
-  const { name, email, roleId, branchId } = parsed.data;
+  const { name, email, roleId, branchId = null } = parsed.data;
 
   await requirePermission({
     userId: caller.id,

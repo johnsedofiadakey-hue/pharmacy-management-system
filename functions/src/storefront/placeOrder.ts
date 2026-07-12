@@ -1,4 +1,5 @@
-import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { HttpsError } from "firebase-functions/v2/https";
+import { onCall } from "../lib/onCall";
 import { z } from "zod";
 import { prisma, StockMovementType, PaymentMethod } from "@pharmacy-os/db";
 import { getCallerCustomer } from "../lib/customerAuthContext";
@@ -11,6 +12,8 @@ const placeOrderSchema = z.object({
   deliveryAddressId: z.string().uuid().optional(),
   paymentMethod: z.nativeEnum(PaymentMethod),
   items: z.array(z.object({ productId: z.string().uuid(), quantity: z.number().int().positive() })).min(1),
+  guestPhone: z.string().optional(),
+  guestName: z.string().optional(),
 });
 
 /**
@@ -28,13 +31,31 @@ const placeOrderSchema = z.object({
  * sale with an approved prescription (Phase 7).
  */
 export const placeOrder = onCall(async (request) => {
-  const customer = await getCallerCustomer(request);
-
   const parsed = placeOrderSchema.safeParse(request.data);
   if (!parsed.success) {
     throw new HttpsError("invalid-argument", parsed.error.message);
   }
   const input = parsed.data;
+
+  let customer;
+  if (request.auth) {
+    customer = await getCallerCustomer(request);
+  } else if (input.guestPhone) {
+    const orgId = (
+      await prisma.branch.findUniqueOrThrow({ where: { id: input.branchId }, select: { organisationId: true } })
+    ).organisationId;
+    customer = await prisma.customer.upsert({
+      where: { organisationId_phone: { organisationId: orgId, phone: input.guestPhone } },
+      create: {
+        organisationId: orgId,
+        phone: input.guestPhone,
+        name: input.guestName ?? null,
+      },
+      update: { name: input.guestName ?? undefined },
+    });
+  } else {
+    throw new HttpsError("unauthenticated", "Sign in or provide a phone number to place an order.");
+  }
 
   if (input.fulfilmentType === "DELIVERY" && !input.deliveryAddressId) {
     throw new HttpsError("invalid-argument", "deliveryAddressId is required for delivery orders.");

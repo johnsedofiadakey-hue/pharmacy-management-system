@@ -1,4 +1,5 @@
-import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { HttpsError } from "firebase-functions/v2/https";
+import { onCall } from "../lib/onCall";
 import { z } from "zod";
 import { prisma, PermissionResource, PermissionAction } from "@pharmacy-os/db";
 import { getCallerUser } from "../lib/authContext";
@@ -10,7 +11,7 @@ const assignUserRoleSchema = z.object({
   targetUserId: z.string().uuid(),
   roleId: z.string().uuid(),
   // null = org-wide grant (e.g. Super Admin, Head Office Admin).
-  branchId: z.string().uuid().nullable(),
+  branchId: z.string().uuid().nullish(),
 });
 
 /**
@@ -27,7 +28,7 @@ export const assignUserRole = onCall(async (request) => {
   if (!parsed.success) {
     throw new HttpsError("invalid-argument", parsed.error.message);
   }
-  const { targetUserId, roleId, branchId } = parsed.data;
+  const { targetUserId, roleId, branchId = null } = parsed.data;
 
   await requirePermission({
     userId: caller.id,

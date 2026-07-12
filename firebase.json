@@ -5,16 +5,24 @@
       "codebase": "default",
       "runtime": "nodejs20",
       "predeploy": [
-        "pnpm --filter @pharmacy-os/db generate",
-        "pnpm --filter @pharmacy-os/db build",
+        "npx --yes pnpm --filter @pharmacy-os/db generate",
+        "npx --yes pnpm --filter @pharmacy-os/db build",
         "npm --prefix functions run vendor-db",
-        "pnpm install",
+        "npx --yes pnpm install",
         "npm --prefix functions run build"
       ]
     }
   ],
   "hosting": {
-    "source": "apps/web"
+    "public": "apps/web/out",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "cleanUrls": true,
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
   },
   "firestore": {
     "rules": "firestore.rules",

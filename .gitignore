@@ -11,7 +11,7 @@ node_modules/
 # Build output
 .next/
 dist/
-lib/
+functions/lib/
 out/
 build/
 

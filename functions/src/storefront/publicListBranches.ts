@@ -1,11 +1,14 @@
-import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { HttpsError } from "firebase-functions/v2/https";
+import { onCall } from "../lib/onCall";
 import { z } from "zod";
 import { prisma } from "@pharmacy-os/db";
 
 const schema = z.object({ organisationId: z.string().uuid() });
 
 /** Public — branch picker for checkout/pickup selection. No auth: staff's listBranches requires a User row, which a customer doesn't have. */
-export const publicListBranches = onCall({ invoker: "public" }, async (request) => {
+export const publicListBranches = onCall(
+  { invoker: "public" },
+  async (request) => {
   const parsed = schema.safeParse(request.data);
   if (!parsed.success) {
     throw new HttpsError("invalid-argument", parsed.error.message);

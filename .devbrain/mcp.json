@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "devbrain-memory": {
+      "command": "/Applications/Personal Agent.app/Contents/MacOS/Personal Agent",
+      "args": [
+        "/Applications/Personal Agent.app/Contents/Resources/devbrain-memory-mcp.mjs",
+        "--data-dir",
+        "/Users/truth/Library/Application Support/personal-agent/agent-data",
+        "--project-id",
+        "pharmacy-management-system-mrhpny04"
+      ],
+      "env": {
+        "ELECTRON_RUN_AS_NODE": "1"
+      }
+    }
+  }
+}

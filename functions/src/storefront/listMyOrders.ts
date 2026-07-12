@@ -1,4 +1,4 @@
-import { onCall } from "firebase-functions/v2/https";
+import { onCall } from "../lib/onCall";
 import { prisma } from "@pharmacy-os/db";
 import { getCallerCustomer } from "../lib/customerAuthContext";
 

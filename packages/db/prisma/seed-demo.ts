@@ -5,8 +5,8 @@ import {
 
 const prisma = new PrismaClient();
 
-const ORG_ID = process.env.DEMO_ORGANISATION_ID ?? "da80f9bb-ba2a-4ecc-944f-ad8057035a8b";
-const ADMIN_UID = process.env.DEMO_ADMIN_UID ?? "cwMW0l7nlSdJH7pBSORTIx6aUmE2";
+const ORG_ID = process.env.DEMO_ORGANISATION_ID ?? "00000000-0000-0000-0000-000000000001";
+const ADMIN_UID = process.env.DEMO_ADMIN_UID ?? "DEMO_SUPER_ADMIN_UID_PLACEHOLDER";
 const ADMIN_EMAIL = process.env.DEMO_ADMIN_EMAIL ?? "admin@pharmacy.com";
 
 const branches = [
@@ -14,7 +14,7 @@ const branches = [
     name: "Nexus Pharma East Legon",
     code: "EAST-LEGON",
     phone: "+233 30 250 1101",
-    email: "eastlegon@nexuspharma.test",
+    email: "eastlegon@nexuspharma.gh",
     physicalAddress: "Lagos Avenue, East Legon, Accra",
     gpsLat: 5.6507,
     gpsLng: -0.1539,
@@ -24,7 +24,7 @@ const branches = [
     name: "Nexus Pharma Osu",
     code: "OSU",
     phone: "+233 30 250 1102",
-    email: "osu@nexuspharma.test",
+    email: "osu@nexuspharma.gh",
     physicalAddress: "Oxford Street, Osu, Accra",
     gpsLat: 5.556,
     gpsLng: -0.1827,
@@ -34,22 +34,95 @@ const branches = [
     name: "Nexus Pharma Adenta",
     code: "ADENTA",
     phone: "+233 30 250 1103",
-    email: "adenta@nexuspharma.test",
+    email: "adenta@nexuspharma.gh",
     physicalAddress: "Adenta Barrier, Accra",
     gpsLat: 5.7043,
     gpsLng: -0.1685,
+    clinicalCareEnabled: true,
+  },
+  {
+    name: "Nexus Pharma Tema",
+    code: "TEMA",
+    phone: "+233 30 250 1104",
+    email: "tema@nexuspharma.gh",
+    physicalAddress: "Community 11, Tema, Greater Accra",
+    gpsLat: 5.6696,
+    gpsLng: -0.0287,
+    clinicalCareEnabled: true,
+  },
+  {
+    name: "Nexus Pharma Spintex",
+    code: "SPINTEX",
+    phone: "+233 30 250 1105",
+    email: "spintex@nexuspharma.gh",
+    physicalAddress: "Spintex Road, Accra",
+    gpsLat: 5.6263,
+    gpsLng: -0.1196,
     clinicalCareEnabled: false,
   },
   {
     name: "Nexus Pharma Kumasi Ahodwo",
     code: "KSI-AHODWO",
-    phone: "+233 32 250 1104",
-    email: "kumasi@nexuspharma.test",
+    phone: "+233 32 250 1106",
+    email: "kumasi@nexuspharma.gh",
     physicalAddress: "Ahodwo Roundabout, Kumasi",
     gpsLat: 6.6622,
     gpsLng: -1.621,
     clinicalCareEnabled: true,
   },
+  {
+    name: "Nexus Pharma Kumasi Kejetia",
+    code: "KSI-KEJE",
+    phone: "+233 32 250 1107",
+    email: "kejetia@nexuspharma.gh",
+    physicalAddress: "Kejetia Market, Kumasi",
+    gpsLat: 6.6953,
+    gpsLng: -1.6271,
+    clinicalCareEnabled: false,
+  },
+  {
+    name: "Nexus Pharma Takoradi",
+    code: "TAKORADI",
+    phone: "+233 31 250 1108",
+    email: "takoradi@nexuspharma.gh",
+    physicalAddress: "Market Circle, Takoradi",
+    gpsLat: 4.9126,
+    gpsLng: -1.7736,
+    clinicalCareEnabled: true,
+  },
+  {
+    name: "Nexus Pharma Tamale",
+    code: "TAMALE",
+    phone: "+233 37 250 1109",
+    email: "tamale@nexuspharma.gh",
+    physicalAddress: "Tamale Central, Northern Region",
+    gpsLat: 9.3989,
+    gpsLng: -0.8408,
+    clinicalCareEnabled: true,
+  },
+  {
+    name: "Nexus Pharma Cape Coast",
+    code: "CAPE-COAST",
+    phone: "+233 33 250 1110",
+    email: "capecoast@nexuspharma.gh",
+    physicalAddress: "Kotokuraba Market, Cape Coast",
+    gpsLat: 5.1057,
+    gpsLng: -1.2471,
+    clinicalCareEnabled: false,
+  },
+];
+
+const categories = [
+  { name: "Pain & Fever", icon: "thermometer" },
+  { name: "Cold, Cough & Flu", icon: "virus" },
+  { name: "Vitamins & Supplements", icon: "heart" },
+  { name: "Antibiotics & Prescription", icon: "pill" },
+  { name: "Baby & Child Health", icon: "baby" },
+  { name: "First Aid & Wound Care", icon: "bandage" },
+  { name: "Allergies & Skin", icon: "sparkles" },
+  { name: "Malaria & Infections", icon: "bug" },
+  { name: "Diabetes & Hypertension", icon: "activity" },
+  { name: "Digestive Health", icon: "stomach" },
 ];
 
 const products = [
@@ -65,7 +138,8 @@ const products = [
     retailPrice: 12.5,
     costPrice: 7,
     classification: PrescriptionClassification.OTC,
-    stock: [120, 95, 80, 110],
+    category: "Pain & Fever",
+    stock: [120, 95, 80, 110, 85, 100, 70, 90, 60, 75],
   },
   {
     name: "Ibuprofen 200mg Tablets",
@@ -79,7 +153,23 @@ const products = [
     retailPrice: 18,
     costPrice: 10,
     classification: PrescriptionClassification.OTC,
-    stock: [60, 55, 40, 48],
+    category: "Pain & Fever",
+    stock: [60, 55, 40, 48, 35, 50, 30, 42, 25, 38],
+  },
+  {
+    name: "Diclofenac Gel 1%",
+    genericName: "Diclofenac Diethylamine",
+    brandName: "JointEase",
+    activeIngredient: "Diclofenac",
+    strength: "1%",
+    dosageForm: "Gel",
+    packSize: "30g tube",
+    barcode: "DEMO-DICLO-GEL",
+    retailPrice: 28,
+    costPrice: 16,
+    classification: PrescriptionClassification.OTC,
+    category: "Pain & Fever",
+    stock: [40, 35, 28, 32, 25, 38, 22, 30, 18, 26],
   },
   {
     name: "Vitamin C + Zinc Effervescent",
@@ -93,7 +183,23 @@ const products = [
     retailPrice: 45,
     costPrice: 27,
     classification: PrescriptionClassification.OTC,
-    stock: [42, 70, 36, 58],
+    category: "Vitamins & Supplements",
+    stock: [42, 70, 36, 58, 50, 65, 30, 48, 25, 40],
+  },
+  {
+    name: "Multivitamin Tablets",
+    genericName: "Multivitamin",
+    brandName: "DailyVita",
+    activeIngredient: "Vitamins A, B, C, D, E",
+    strength: "Complete formula",
+    dosageForm: "Tablet",
+    packSize: "30 tablets",
+    barcode: "DEMO-MULTI-VIT",
+    retailPrice: 38,
+    costPrice: 22,
+    classification: PrescriptionClassification.OTC,
+    category: "Vitamins & Supplements",
+    stock: [55, 48, 40, 50, 35, 52, 28, 45, 30, 42],
   },
   {
     name: "ORS Sachets",
@@ -107,7 +213,8 @@ const products = [
     retailPrice: 15,
     costPrice: 8,
     classification: PrescriptionClassification.OTC,
-    stock: [84, 76, 68, 90],
+    category: "Digestive Health",
+    stock: [84, 76, 68, 90, 60, 80, 50, 72, 45, 65],
   },
   {
     name: "Cetirizine 10mg Tablets",
@@ -121,7 +228,8 @@ const products = [
     retailPrice: 20,
     costPrice: 11,
     classification: PrescriptionClassification.OTC,
-    stock: [50, 44, 30, 36],
+    category: "Allergies & Skin",
+    stock: [50, 44, 30, 36, 28, 42, 22, 34, 20, 32],
   },
   {
     name: "Amoxicillin 500mg Capsules",
@@ -135,7 +243,23 @@ const products = [
     retailPrice: 38,
     costPrice: 24,
     classification: PrescriptionClassification.POM,
-    stock: [32, 28, 20, 26],
+    category: "Antibiotics & Prescription",
+    stock: [32, 28, 20, 26, 18, 30, 15, 24, 12, 22],
+  },
+  {
+    name: "Artemether-Lumefantrine 80/480mg",
+    genericName: "Artemether + Lumefantrine",
+    brandName: "MalNex",
+    activeIngredient: "Artemether, Lumefantrine",
+    strength: "80mg/480mg",
+    dosageForm: "Tablet",
+    packSize: "24 tablets",
+    barcode: "DEMO-AL-80-480",
+    retailPrice: 65,
+    costPrice: 42,
+    classification: PrescriptionClassification.POM,
+    category: "Malaria & Infections",
+    stock: [28, 24, 18, 22, 16, 26, 14, 20, 10, 18],
   },
   {
     name: "Metformin 500mg Tablets",
@@ -149,7 +273,23 @@ const products = [
     retailPrice: 32,
     costPrice: 18,
     classification: PrescriptionClassification.POM,
-    stock: [46, 40, 34, 52],
+    category: "Diabetes & Hypertension",
+    stock: [46, 40, 34, 52, 30, 44, 28, 38, 22, 36],
+  },
+  {
+    name: "Amlodipine 5mg Tablets",
+    genericName: "Amlodipine",
+    brandName: "CardioCalm",
+    activeIngredient: "Amlodipine",
+    strength: "5mg",
+    dosageForm: "Tablet",
+    packSize: "30 tablets",
+    barcode: "DEMO-AMLO-5",
+    retailPrice: 28,
+    costPrice: 16,
+    classification: PrescriptionClassification.POM,
+    category: "Diabetes & Hypertension",
+    stock: [38, 32, 26, 40, 24, 36, 20, 30, 18, 28],
   },
   {
     name: "Baby Saline Nasal Drops",
@@ -163,7 +303,128 @@ const products = [
     retailPrice: 24,
     costPrice: 13,
     classification: PrescriptionClassification.OTC,
-    stock: [35, 48, 25, 40],
+    category: "Baby & Child Health",
+    stock: [35, 48, 25, 40, 30, 45, 20, 38, 18, 32],
+  },
+  {
+    name: "Baby Paracetamol Suspension",
+    genericName: "Paracetamol",
+    brandName: "FeverEase Baby",
+    activeIngredient: "Paracetamol",
+    strength: "120mg/5ml",
+    dosageForm: "Suspension",
+    packSize: "60ml bottle",
+    barcode: "DEMO-BABY-PARA",
+    retailPrice: 22,
+    costPrice: 12,
+    classification: PrescriptionClassification.OTC,
+    category: "Baby & Child Health",
+    stock: [30, 42, 22, 36, 28, 40, 18, 34, 15, 28],
+  },
+  {
+    name: "Cough Syrup (Dextromethorphan)",
+    genericName: "Dextromethorphan HBr",
+    brandName: "CoughCalm",
+    activeIngredient: "Dextromethorphan",
+    strength: "15mg/5ml",
+    dosageForm: "Syrup",
+    packSize: "100ml bottle",
+    barcode: "DEMO-COUGH-DM",
+    retailPrice: 30,
+    costPrice: 17,
+    classification: PrescriptionClassification.OTC,
+    category: "Cold, Cough & Flu",
+    stock: [36, 30, 24, 28, 22, 34, 18, 26, 16, 24],
+  },
+  {
+    name: "Chlorpheniramine 4mg Tablets",
+    genericName: "Chlorpheniramine Maleate",
+    brandName: "AllerStop",
+    activeIngredient: "Chlorpheniramine",
+    strength: "4mg",
+    dosageForm: "Tablet",
+    packSize: "50 tablets",
+    barcode: "DEMO-CHLOR-4",
+    retailPrice: 14,
+    costPrice: 7,
+    classification: PrescriptionClassification.OTC,
+    category: "Allergies & Skin",
+    stock: [58, 50, 40, 48, 35, 52, 30, 45, 28, 40],
+  },
+  {
+    name: "Hydrocortisone Cream 1%",
+    genericName: "Hydrocortisone",
+    brandName: "SkinCalm",
+    activeIngredient: "Hydrocortisone",
+    strength: "1%",
+    dosageForm: "Cream",
+    packSize: "15g tube",
+    barcode: "DEMO-HC-CREAM",
+    retailPrice: 26,
+    costPrice: 14,
+    classification: PrescriptionClassification.OTC,
+    category: "Allergies & Skin",
+    stock: [40, 36, 28, 34, 24, 38, 20, 30, 18, 26],
+  },
+  {
+    name: "Omeprazole 20mg Capsules",
+    genericName: "Omeprazole",
+    brandName: "AcidShield",
+    activeIngredient: "Omeprazole",
+    strength: "20mg",
+    dosageForm: "Capsule",
+    packSize: "28 capsules",
+    barcode: "DEMO-OME-20",
+    retailPrice: 35,
+    costPrice: 20,
+    classification: PrescriptionClassification.POM,
+    category: "Digestive Health",
+    stock: [42, 36, 30, 38, 28, 40, 24, 34, 20, 30],
+  },
+  {
+    name: "Zinc Tablets 20mg",
+    genericName: "Zinc Sulphate",
+    brandName: "ZincBoost",
+    activeIngredient: "Zinc",
+    strength: "20mg",
+    dosageForm: "Tablet",
+    packSize: "30 tablets",
+    barcode: "DEMO-ZINC-20",
+    retailPrice: 18,
+    costPrice: 9,
+    classification: PrescriptionClassification.OTC,
+    category: "Vitamins & Supplements",
+    stock: [65, 58, 50, 60, 45, 55, 40, 52, 35, 48],
+  },
+  {
+    name: "Adhesive Bandages (Assorted)",
+    genericName: "Adhesive Bandage",
+    brandName: "SafeShield",
+    activeIngredient: "N/A",
+    strength: "Assorted size",
+    dosageForm: "Bandage",
+    packSize: "50 pieces",
+    barcode: "DEMO-BANDAGE",
+    retailPrice: 20,
+    costPrice: 10,
+    classification: PrescriptionClassification.OTC,
+    category: "First Aid & Wound Care",
+    stock: [48, 42, 36, 44, 32, 46, 28, 40, 25, 36],
+  },
+  {
+    name: "Methylated Spirits 500ml",
+    genericName: "Denatured Ethanol",
+    brandName: "PureClean",
+    activeIngredient: "Ethanol",
+    strength: "70%",
+    dosageForm: "Liquid",
+    packSize: "500ml bottle",
+    barcode: "DEMO-METH-SPIRIT",
+    retailPrice: 16,
+    costPrice: 8,
+    classification: PrescriptionClassification.OTC,
+    category: "First Aid & Wound Care",
+    stock: [52, 46, 38, 48, 34, 50, 30, 42, 28, 38],
   },
 ];
 
@@ -177,15 +438,34 @@ async function main() {
     where: { organisationId: null, name: "super_admin" },
   });
   if (!superAdminRole) {
-    throw new Error("System role super_admin was not found. Run pnpm --filter @pharmacy-os/db seed first.");
+    throw new Error("System role super_admin not found. Run the system seed first.");
+  }
+
+  const createdCategories: Record<string, string> = {};
+  for (const cat of categories) {
+    let record = await prisma.category.findFirst({
+      where: { organisationId: ORG_ID, name: cat.name, parentCategoryId: null },
+    });
+    if (!record) {
+      record = await prisma.category.create({
+        data: { organisationId: ORG_ID, name: cat.name },
+      });
+    } else {
+      record = await prisma.category.update({
+        where: { id: record.id },
+        data: { name: cat.name },
+      });
+    }
+    createdCategories[cat.name] = record.id;
   }
 
   const createdBranches = [];
   for (const branchInput of branches) {
+    const whId = `demo_wh_${branchInput.code.toLowerCase().replace(/[^a-z0-9]+/g, "_")}`;
     const warehouse = await prisma.warehouse.upsert({
-      where: { id: `demo_wh_${branchInput.code.toLowerCase().replace(/[^a-z0-9]+/g, "_")}` },
+      where: { id: whId },
       create: {
-        id: `demo_wh_${branchInput.code.toLowerCase().replace(/[^a-z0-9]+/g, "_")}`,
+        id: whId,
         organisationId: ORG_ID,
         name: `${branchInput.name} Warehouse`,
         location: branchInput.physicalAddress,
@@ -215,7 +495,6 @@ async function main() {
   const admin = await prisma.user.upsert({
     where: { firebaseUid: ADMIN_UID },
     create: {
-      id: ADMIN_UID,
       firebaseUid: ADMIN_UID,
       organisationId: ORG_ID,
       name: "Demo Super Admin",
@@ -224,7 +503,6 @@ async function main() {
       primaryBranchId: createdBranches[0]?.id,
     },
     update: {
-      organisationId: ORG_ID,
       name: "Demo Super Admin",
       email: ADMIN_EMAIL,
       isActive: true,
@@ -232,16 +510,12 @@ async function main() {
     },
   });
 
-  const existingSuperAdminGrant = await prisma.userRole.findFirst({
+  const existingGrant = await prisma.userRole.findFirst({
     where: { userId: admin.id, roleId: superAdminRole.id, branchId: null },
   });
-  if (!existingSuperAdminGrant) {
+  if (!existingGrant) {
     await prisma.userRole.create({
-      data: {
-      userId: admin.id,
-      roleId: superAdminRole.id,
-      branchId: null,
-      },
+      data: { userId: admin.id, roleId: superAdminRole.id, branchId: null },
     });
   }
 
@@ -258,14 +532,15 @@ async function main() {
         dosageForm: productInput.dosageForm,
         packSize: productInput.packSize,
         barcode: productInput.barcode,
+        categoryId: createdCategories[productInput.category] ?? null,
         costPrice: productInput.costPrice,
         retailPrice: productInput.retailPrice,
-        minSellingPrice: productInput.retailPrice * 0.9,
+        minSellingPrice: Number((productInput.retailPrice * 0.9).toFixed(2)),
         prescriptionClassification: productInput.classification,
         reorderLevel: 20,
-        minStock: 20,
+        minStock: 10,
         maxStock: 200,
-        storageConditions: "Store below 30C in a dry place",
+        storageConditions: "Store below 30°C in a dry place",
       },
       update: {
         name: productInput.name,
@@ -275,9 +550,10 @@ async function main() {
         strength: productInput.strength,
         dosageForm: productInput.dosageForm,
         packSize: productInput.packSize,
+        categoryId: createdCategories[productInput.category] ?? null,
         costPrice: productInput.costPrice,
         retailPrice: productInput.retailPrice,
-        minSellingPrice: productInput.retailPrice * 0.9,
+        minSellingPrice: Number((productInput.retailPrice * 0.9).toFixed(2)),
         prescriptionClassification: productInput.classification,
         isActive: true,
       },
@@ -299,26 +575,33 @@ async function main() {
     });
 
     for (const [index, branch] of createdBranches.entries()) {
-      await prisma.branchStock.upsert({
-        where: { branchId_batchId: { branchId: branch.id, batchId: batch.id } },
-        create: {
-          branchId: branch.id,
-          productId: product.id,
-          batchId: batch.id,
-          quantityOnHand: productInput.stock[index] ?? 25,
-        },
-        update: {
-          quantityOnHand: productInput.stock[index] ?? 25,
-        },
-      });
+      const qty = productInput.stock[index] ?? 25;
+      if (qty > 0) {
+        await prisma.branchStock.upsert({
+          where: { branchId_batchId: { branchId: branch.id, batchId: batch.id } },
+          create: {
+            branchId: branch.id,
+            productId: product.id,
+            batchId: batch.id,
+            quantityOnHand: qty,
+          },
+          update: {
+            quantityOnHand: qty,
+          },
+        });
+      }
     }
   }
 
-  console.log(`Demo seeded for ${organisation.name}.`);
-  console.log(`Branches: ${createdBranches.length}`);
-  console.log(`Products: ${products.length}`);
-  console.log(`Super Admin UID: ${ADMIN_UID}`);
-  console.log(`Super Admin email: ${ADMIN_EMAIL}`);
+  console.log(`\n✅ Nexus Pharma — Demo data seeded successfully.`);
+  console.log(`   Organisation:  ${organisation.name} (${ORG_ID})`);
+  console.log(`   Branches:      ${createdBranches.length}`);
+  for (const b of createdBranches) {
+    console.log(`     - ${b.name} (${b.physicalAddress})`);
+  }
+  console.log(`   Categories:    ${categories.length}`);
+  console.log(`   Products:      ${products.length}`);
+  console.log(`   Super Admin:   ${ADMIN_EMAIL} (UID: ${ADMIN_UID})`);
 }
 
 main()

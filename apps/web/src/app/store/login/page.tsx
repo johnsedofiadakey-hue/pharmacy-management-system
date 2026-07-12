@@ -18,7 +18,8 @@ export default function CustomerLoginPage() {
     setError(null);
     try {
       await signInWithEmailAndPassword(getFirebaseAuth(), email, password);
-      router.push("/store/account");
+      const next = new URLSearchParams(window.location.search).get("next");
+      router.push(next && next.startsWith("/") ? next : "/store/account");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign-in failed.");
     } finally {

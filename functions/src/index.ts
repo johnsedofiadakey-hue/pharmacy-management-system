@@ -18,6 +18,7 @@ export { listBranchStock } from "./inventory/listBranchStock";
 export { reviewStockAdjustmentRequest } from "./inventory/reviewStockAdjustmentRequest";
 export { listPendingStockAdjustmentRequests } from "./inventory/listPendingStockAdjustmentRequests";
 export { openTill } from "./pos/openTill";
+export { getActiveTillSession } from "./pos/getActiveTillSession";
 export { closeTill } from "./pos/closeTill";
 export { createSale } from "./pos/createSale";
 export { listSales } from "./pos/listSales";

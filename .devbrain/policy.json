@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "budgetMode": "balanced",
+  "nvidiaModel": "auto",
+  "checks": [],
+  "maxRepairAttempts": 2,
+  "mediumRiskReviews": 1,
+  "highRiskReviews": 2
+}

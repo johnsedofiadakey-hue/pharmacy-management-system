@@ -1,4 +1,4 @@
-import { onCall } from "firebase-functions/v2/https";
+import { onCall } from "../lib/onCall";
 import { prisma, PermissionResource, PermissionAction, FollowupStatus } from "@pharmacy-os/db";
 import { getCallerUser } from "../lib/authContext";
 import { requirePermissionAnyBranch } from "../lib/permissions";

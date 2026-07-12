@@ -69,6 +69,7 @@ const ROLE_DEFINITIONS: { name: string; grants: Grant[] | "ALL" }[] = [
   {
     name: "branch_manager",
     grants: [
+      [PermissionResource.BRANCHES, ["VIEW"]],
       [PermissionResource.SALES, ["VIEW", "CANCEL", "APPROVE"]],
       [PermissionResource.PRODUCTS, ["VIEW"]],
       [PermissionResource.STOCK, ["VIEW", "EDIT", "APPROVE"]],
@@ -89,6 +90,7 @@ const ROLE_DEFINITIONS: { name: string; grants: Grant[] | "ALL" }[] = [
   {
     name: "superintendent_pharmacist",
     grants: [
+      [PermissionResource.BRANCHES, ["VIEW"]],
       [PermissionResource.SALES, ["VIEW", "APPROVE"]],
       [PermissionResource.PRODUCTS, ["VIEW"]],
       [PermissionResource.STOCK, ["VIEW"]],
@@ -101,6 +103,7 @@ const ROLE_DEFINITIONS: { name: string; grants: Grant[] | "ALL" }[] = [
   {
     name: "pharmacy_technician",
     grants: [
+      [PermissionResource.BRANCHES, ["VIEW"]],
       [PermissionResource.SALES, ["VIEW", "CREATE"]],
       [PermissionResource.PRODUCTS, ["VIEW"]],
       [PermissionResource.STOCK, ["VIEW"]],
@@ -112,6 +115,7 @@ const ROLE_DEFINITIONS: { name: string; grants: Grant[] | "ALL" }[] = [
   {
     name: "cashier",
     grants: [
+      [PermissionResource.BRANCHES, ["VIEW"]],
       [PermissionResource.SALES, ["VIEW", "CREATE"]],
       [PermissionResource.PRODUCTS, ["VIEW"]],
       [PermissionResource.STOCK, ["VIEW"]],
@@ -123,6 +127,7 @@ const ROLE_DEFINITIONS: { name: string; grants: Grant[] | "ALL" }[] = [
   {
     name: "inventory_officer",
     grants: [
+      [PermissionResource.BRANCHES, ["VIEW"]],
       [PermissionResource.PRODUCTS, ["VIEW"]],
       [PermissionResource.STOCK, ["VIEW", "CREATE", "EDIT"]],
       [PermissionResource.PURCHASES, ["VIEW"]],
@@ -133,6 +138,7 @@ const ROLE_DEFINITIONS: { name: string; grants: Grant[] | "ALL" }[] = [
   {
     name: "procurement_officer",
     grants: [
+      [PermissionResource.BRANCHES, ["VIEW"]],
       [PermissionResource.PRODUCTS, ["VIEW"]],
       [PermissionResource.STOCK, ["VIEW"]],
       [PermissionResource.PURCHASES, ["VIEW", "CREATE", "EDIT"]],
@@ -143,6 +149,7 @@ const ROLE_DEFINITIONS: { name: string; grants: Grant[] | "ALL" }[] = [
   {
     name: "warehouse_manager",
     grants: [
+      [PermissionResource.BRANCHES, ["VIEW"]],
       [PermissionResource.PRODUCTS, ["VIEW"]],
       [PermissionResource.STOCK, ["VIEW", "CREATE", "EDIT", "APPROVE"]],
       [PermissionResource.PURCHASES, ["VIEW"]],
@@ -152,6 +159,7 @@ const ROLE_DEFINITIONS: { name: string; grants: Grant[] | "ALL" }[] = [
   {
     name: "accountant",
     grants: [
+      [PermissionResource.BRANCHES, ["VIEW"]],
       [PermissionResource.SALES, ["VIEW", "EXPORT"]],
       [PermissionResource.PURCHASES, ["VIEW", "EXPORT"]],
       [PermissionResource.SUPPLIERS, ["VIEW"]],

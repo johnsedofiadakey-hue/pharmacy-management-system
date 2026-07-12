@@ -1,15 +1,19 @@
-import { onCall } from "firebase-functions/v2/https";
+import { onCall } from "../lib/onCall";
 import { prisma, PermissionResource, PermissionAction } from "@pharmacy-os/db";
 import { getCallerUser } from "../lib/authContext";
-import { requirePermission } from "../lib/permissions";
+import { requirePermissionAnyBranch } from "../lib/permissions";
 
+// Any-branch check, not org-wide-only: this just lists the org's branch
+// directory (names/addresses) for pickers on every branch-scoped page —
+// a cashier or branch manager whose grant is scoped to their own branch
+// still needs this to select that branch in the first place. Contrast with
+// genuinely org-wide-only actions (e.g. listAuditLog, initiateDrugRecall),
+// which correctly require an org-wide grant via requirePermission(branchId: null).
 export const listBranches = onCall(async (request) => {
   const caller = await getCallerUser(request);
 
-  await requirePermission({
+  await requirePermissionAnyBranch({
     userId: caller.id,
-    organisationId: caller.organisationId,
-    branchId: null,
     resource: PermissionResource.BRANCHES,
     action: PermissionAction.VIEW,
   });

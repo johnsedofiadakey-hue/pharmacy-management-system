@@ -1,15 +1,17 @@
-import { onCall } from "firebase-functions/v2/https";
+import { onCall } from "../lib/onCall";
 import { prisma, PermissionResource, PermissionAction } from "@pharmacy-os/db";
 import { getCallerUser } from "../lib/authContext";
-import { requirePermission } from "../lib/permissions";
+import { requirePermissionAnyBranch } from "../lib/permissions";
 
+// Any-branch check: the product catalogue itself isn't branch-scoped data
+// (branch_stock is), and every branch-scoped role (cashier, pharmacy
+// technician, branch manager...) needs it for POS/pharmacist/procurement
+// pages even though their PRODUCTS:VIEW grant is scoped to their own branch.
 export const listProducts = onCall(async (request) => {
   const caller = await getCallerUser(request);
 
-  await requirePermission({
+  await requirePermissionAnyBranch({
     userId: caller.id,
-    organisationId: caller.organisationId,
-    branchId: null,
     resource: PermissionResource.PRODUCTS,
     action: PermissionAction.VIEW,
   });

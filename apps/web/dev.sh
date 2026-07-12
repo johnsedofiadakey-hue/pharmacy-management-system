@@ -1,4 +1,5 @@
 #!/bin/bash
-export PATH="/Users/verafafaagbenya/.nvm/versions/node/v24.18.0/bin:$PATH"
+# Machine-agnostic dev launcher — uses whatever node is on PATH and runs
+# pnpm through corepack so no global pnpm install is required.
 cd "$(dirname "$0")"
-exec pnpm dev
+exec corepack pnpm dev

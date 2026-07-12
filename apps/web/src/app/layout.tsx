@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Source_Serif_4 } from "next/font/google";
+import { Inter, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import { AuthProvider } from "@/lib/firebase/authContext";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
@@ -13,10 +14,14 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const displaySerif = Source_Serif_4({
-  variable: "--font-display-serif",
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
+// Satoshi (Fontshare) — display face, self-hosted. 500/700 are the weights
+// Fontshare ships; CSS 600 resolves to the nearest.
+const satoshi = localFont({
+  variable: "--font-satoshi",
+  src: [
+    { path: "../fonts/Satoshi-500.woff2", weight: "500", style: "normal" },
+    { path: "../fonts/Satoshi-700.woff2", weight: "700", style: "normal" },
+  ],
 });
 
 export const metadata: Metadata = {
@@ -32,7 +37,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${displaySerif.variable} h-full antialiased`}
+      className={`${inter.variable} ${geistMono.variable} ${satoshi.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <AuthProvider>{children}</AuthProvider>

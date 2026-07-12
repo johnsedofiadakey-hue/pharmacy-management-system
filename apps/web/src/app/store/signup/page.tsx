@@ -21,7 +21,11 @@ export default function CustomerSignupPage() {
     try {
       await createUserWithEmailAndPassword(getFirebaseAuth(), form.email, form.password);
       await linkCustomerAccount({ organisationId: ORG_ID, phone: form.phone, name: form.name });
-      router.push("/store/account");
+      // Read `next` at submit time (not useSearchParams) so the page stays
+      // statically prerenderable; checkout sends ?next=/store so the customer
+      // lands back on their still-intact cart.
+      const next = new URLSearchParams(window.location.search).get("next");
+      router.push(next && next.startsWith("/") ? next : "/store/account");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign-up failed.");
     } finally {
