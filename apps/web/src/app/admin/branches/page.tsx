@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { STAFF_BRANCH_STORAGE_KEY } from "@/components/branch/BranchWorkspaceContext";
 import {
   listBranches,
   createBranch,
@@ -50,6 +52,7 @@ export default function BranchesPage() {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh();
   }, []);
 
@@ -189,7 +192,7 @@ export default function BranchesPage() {
         <ul className="mb-8 flex flex-col gap-2">
           {branches.map((branch) => (
             <li key={branch.id} className="clinical-card flex items-center justify-between rounded-xl p-4">
-              <div>
+              <div className="min-w-0">
                 <div className="font-medium">
                   {branch.name}{" "}
                   {!branch.isActive && (
@@ -205,13 +208,35 @@ export default function BranchesPage() {
                     {branch.gpsLat.toFixed(5)}, {branch.gpsLng.toFixed(5)}
                   </div>
                 )}
+                <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
+                  {branch.isShowcase && <span className="status-pill status-info">Showcase</span>}
+                  {branch.gpsLat == null || branch.gpsLng == null ? (
+                    <span className="status-pill status-warn">Missing coordinates</span>
+                  ) : (
+                    <span className="status-pill status-safe">Customer location ready</span>
+                  )}
+                  {!branch.phone && <span className="status-pill status-warn">Missing phone</span>}
+                  {!branch.physicalAddress && <span className="status-pill status-warn">Missing address</span>}
+                  <span className="status-pill status-info">
+                    {branch.clinicalCareEnabled ? "Clinical care on" : "Retail only"}
+                  </span>
+                </div>
               </div>
-              <button
-                onClick={() => handleToggleActive(branch)}
-                className="btn-secondary px-3 py-1 text-sm"
-              >
-                {branch.isActive ? "Deactivate" : "Reactivate"}
-              </button>
+              <div className="flex shrink-0 flex-wrap justify-end gap-2">
+                <Link
+                  href="/branch/dashboard"
+                  onClick={() => window.localStorage.setItem(STAFF_BRANCH_STORAGE_KEY, branch.id)}
+                  className="btn-primary px-3 py-1.5 text-sm"
+                >
+                  Open workspace
+                </Link>
+                <button
+                  onClick={() => handleToggleActive(branch)}
+                  className={branch.isActive ? "btn-secondary px-3 py-1.5 text-sm text-[color:var(--danger)]" : "btn-secondary px-3 py-1.5 text-sm"}
+                >
+                  {branch.isActive ? (branch.isShowcase ? "Remove showcase branch" : "Deactivate") : "Reactivate"}
+                </button>
+              </div>
             </li>
           ))}
         </ul>

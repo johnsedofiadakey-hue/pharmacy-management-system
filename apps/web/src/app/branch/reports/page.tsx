@@ -2,14 +2,12 @@
 
 import { useEffect, useState } from "react";
 import {
-  listBranches,
   getSalesReport,
   getProfitabilityReport,
   getInventoryReport,
   getProcurementReport,
   getOperationsReport,
   getDemandForecast,
-  type Branch,
   type SalesReport,
   type ProfitabilityReport,
   type InventoryReport,
@@ -17,6 +15,7 @@ import {
   type OperationsReport,
   type DemandForecast,
 } from "@/lib/firebase/callables";
+import { useBranchWorkspace } from "@/components/branch/BranchWorkspaceContext";
 
 type ReportType = "sales" | "profitability" | "inventory" | "procurement" | "operations" | "forecast";
 
@@ -30,8 +29,7 @@ function daysAgo(n: number) {
 // phases). Date range defaults to the trailing 30 days for reports that take
 // one.
 export default function ReportsPage() {
-  const [branches, setBranches] = useState<Branch[]>([]);
-  const [branchId, setBranchId] = useState("");
+  const { branchId, selectedBranch } = useBranchWorkspace();
   const [reportType, setReportType] = useState<ReportType>("sales");
   const [error, setError] = useState<string | null>(null);
 
@@ -43,13 +41,8 @@ export default function ReportsPage() {
   const [forecast, setForecast] = useState<DemandForecast | null>(null);
 
   useEffect(() => {
-    listBranches()
-      .then((r) => setBranches(r.data.branches))
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load branches."));
-  }, []);
-
-  useEffect(() => {
     if (!branchId) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setError(null);
     const start = daysAgo(30);
     const end = new Date().toISOString();
@@ -76,24 +69,14 @@ export default function ReportsPage() {
       <div className="mb-6">
         <p className="text-sm font-semibold uppercase text-[color:var(--primary)]">Branch Workspace</p>
         <h1 className="mt-1 text-3xl font-semibold text-[color:var(--secondary)]">Reports</h1>
-        <p className="mt-2 max-w-2xl text-sm text-[color:var(--muted)]">Trailing 30-day operational reports.</p>
+        <p className="mt-2 max-w-2xl text-sm text-[color:var(--muted)]">
+          Trailing 30-day operational reports for {selectedBranch?.name ?? "the active branch"}.
+        </p>
       </div>
 
       {error && <p className="mb-4 rounded bg-red-50 p-3 text-sm text-[color:var(--danger)]">{error}</p>}
 
       <div className="mb-6 flex flex-wrap gap-3">
-        <select
-          className="field px-3 py-2"
-          value={branchId}
-          onChange={(e) => setBranchId(e.target.value)}
-        >
-          <option value="">Select branch...</option>
-          {branches.map((b) => (
-            <option key={b.id} value={b.id}>
-              {b.name}
-            </option>
-          ))}
-        </select>
         <select
           className="field px-3 py-2"
           value={reportType}

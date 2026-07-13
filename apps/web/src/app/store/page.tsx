@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Search, MapPin, ShoppingBag, ShoppingCart, Pill, HeartPulse, Sparkles, Baby, Stethoscope, Phone, UserCircle } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { PublicBrandTheme } from "@/components/PublicBrandTheme";
 import { useAuth } from "@/lib/firebase/authContext";
 import {
   publicListProducts,
@@ -15,15 +15,18 @@ import {
   type PublicBranch,
 } from "@/lib/firebase/callables";
 import { useStoredCart } from "@/lib/useStoredCart";
+import { useTenantBranding } from "@/lib/tenant/useTenantBranding";
+import { showcaseBranches, showcaseProducts } from "@/lib/showcaseData";
 import { Alert, Badge, Button, EmptyState, Select, SkeletonGrid } from "@/components/ui";
 import { Footer } from "@/components/Footer";
 
 type StorePaymentMethod = "CASH" | "MOMO" | "CARD" | "BANK_TRANSFER";
 
-const ORG_ID = process.env.NEXT_PUBLIC_ORGANISATION_ID ?? "";
-const categories = ["All", "Pain & fever", "Cold & flu", "Vitamins", "Baby care", "Personal care", "Prescription review"];
+const baseCategories = ["All", "Pain & fever", "Cold & flu", "Vitamins", "Baby care", "Personal care", "Prescription review"];
 
 function productCategory(product: PublicProduct): string {
+  if (product.storefrontCategoryName) return product.storefrontCategoryName;
+  if (product.category?.name) return product.category.name;
   const name = `${product.name} ${product.genericName ?? ""} ${product.brandName ?? ""}`.toLowerCase();
   if (product.prescriptionClassification === "RESTRICTED" || product.prescriptionClassification === "POM") return "Prescription review";
   if (/(pain|fever|para|ibuprofen|diclofenac|analgesic)/.test(name)) return "Pain & fever";
@@ -59,7 +62,7 @@ function distanceKm(a: { lat: number; lng: number }, branch: PublicBranch): numb
 
 export default function StorePage() {
   const { user } = useAuth();
-  const router = useRouter();
+  const { organisationId, branding, loading: tenantLoading, error: tenantError } = useTenantBranding();
   const [products, setProducts] = useState<PublicProduct[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [branches, setBranches] = useState<PublicBranch[]>([]);
@@ -76,18 +79,31 @@ export default function StorePage() {
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [usingShowcaseFallback, setUsingShowcaseFallback] = useState(false);
 
   useEffect(() => {
-    if (!ORG_ID) {
-      setError("NEXT_PUBLIC_ORGANISATION_ID is not configured for this deployment.");
+    /* eslint-disable react-hooks/set-state-in-effect */
+    if (tenantLoading) {
+      return;
+    }
+
+    if (!organisationId) {
+      setError(tenantError ?? "No organisation is configured for this storefront.");
       setLoadingProducts(false);
       return;
     }
-    publicListProducts(ORG_ID)
+
+    setError(null);
+    setUsingShowcaseFallback(false);
+    setLoadingProducts(true);
+    publicListProducts(organisationId)
       .then((r) => setProducts(r.data.products))
-      .catch(() => setError("Products are not available right now. Please try again shortly or contact a branch."))
+      .catch(() => {
+        setProducts(showcaseProducts);
+        setUsingShowcaseFallback(true);
+      })
       .finally(() => setLoadingProducts(false));
-    publicListBranches(ORG_ID)
+    publicListBranches(organisationId)
       .then((r) => {
         setBranches(r.data.branches);
         const savedBranchId = window.localStorage.getItem("selectedBranchId");
@@ -96,9 +112,13 @@ export default function StorePage() {
       })
       .catch((err) => {
         console.error("Failed to load branches:", err);
-        setError("Could not load branches. Please check your connection or contact support.");
+        setBranches(showcaseBranches);
+        setBranchId(showcaseBranches[0]?.id ?? "");
+        window.localStorage.setItem("selectedBranchId", showcaseBranches[0]?.id ?? "");
+        setUsingShowcaseFallback(true);
       });
-  }, []);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [organisationId, tenantError, tenantLoading]);
 
   function addToCart(product: PublicProduct) {
     addLine({ productId: product.id, name: product.name, unitPrice: Number(product.retailPrice ?? 0) });
@@ -124,6 +144,10 @@ export default function StorePage() {
 
   const cartCount = cart.reduce((sum, l) => sum + l.quantity, 0);
   const selectedBranch = branches.find((b) => b.id === branchId);
+  const categoryOptions = useMemo(
+    () => Array.from(new Set(baseCategories.concat(products.map(productCategory).filter((item) => item !== "All")))),
+    [products]
+  );
 
   function selectNearestBranch() {
     if (!navigator.geolocation) {
@@ -166,6 +190,14 @@ export default function StorePage() {
 
     setPlacing(true);
     try {
+      if (usingShowcaseFallback) {
+        setMessage("Demo order placed. This showcase order is ready for client walkthrough; no live payment was taken.");
+        clearCart();
+        setGuestPhone("");
+        setGuestName("");
+        return;
+      }
+
       const result = await placeOrder({
         branchId,
         fulfilmentType,
@@ -200,13 +232,14 @@ export default function StorePage() {
 
   return (
     <main className="app-shell min-h-screen pb-12">
+      <PublicBrandTheme />
       <header className="sticky top-0 z-30 border-b border-[color:var(--border)] bg-white/95 backdrop-blur">
         <div className="page-wrap flex flex-wrap items-center gap-3 py-3.5 md:flex-nowrap">
           <div className="flex items-center gap-2">
             <Link href="/" className="btn-ghost grid size-9 place-items-center rounded-full" aria-label="Back to home">
               <ArrowLeft size={18} />
             </Link>
-            <Logo size="sm" />
+            <Logo size="sm" brandName={branding.brandName} logoUrl={branding.logoUrl} />
           </div>
           <div className="field-pill order-last flex w-full items-center gap-2 px-4 py-2.5 md:order-none md:mx-4 md:flex-1">
             <Search size={17} className="shrink-0 text-[color:var(--muted)]" />
@@ -264,7 +297,7 @@ export default function StorePage() {
 
           {/* Category chips */}
           <div className="mt-5 flex max-w-full gap-2 overflow-x-auto pb-2" role="tablist" aria-label="Product categories">
-            {categories.map((item) => {
+            {categoryOptions.map((item) => {
               const Icon = categoryIcon[item] ?? Pill;
               return (
                 <button
@@ -307,6 +340,7 @@ export default function StorePage() {
               {visibleProducts.map((product) => {
                 const restricted = product.prescriptionClassification === "RESTRICTED";
                 const Icon = categoryIcon[productCategory(product)] ?? Pill;
+                const imageUrl = product.storefrontImageUrl;
                 return (
                   <li key={product.id} className="min-w-0">
                     <div className="product-card flex h-full flex-col overflow-hidden">
@@ -316,7 +350,12 @@ export default function StorePage() {
                             {product.prescriptionClassification === "OTC" ? "OTC" : "Rx"}
                           </Badge>
                         </span>
-                        <Icon size={40} className="text-[color:var(--primary)]" />
+                        {imageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={imageUrl} alt={product.name} className="size-full object-cover" />
+                        ) : (
+                          <Icon size={40} className="text-[color:var(--primary)]" />
+                        )}
                       </div>
                       <div className="flex flex-1 flex-col p-4">
                         <div className="truncate font-semibold text-[color:var(--secondary)]">{product.name}</div>

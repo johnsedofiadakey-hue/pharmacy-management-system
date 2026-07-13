@@ -2,6 +2,7 @@ import { HttpsError } from "firebase-functions/v2/https";
 import { onCall } from "../lib/onCall";
 import { z } from "zod";
 import { prisma } from "@pharmacy-os/db";
+import { getProductDisplay } from "../lib/productDisplay";
 
 const schema = z.object({ organisationId: z.string().uuid() });
 
@@ -30,14 +31,23 @@ export const publicListProducts = onCall(
       barcode: true,
       retailPrice: true,
       prescriptionClassification: true,
+      taxConfig: true,
+      category: { select: { id: true, name: true } },
     },
     orderBy: { name: "asc" },
   });
 
   return {
     products: products.map((product) => ({
-      ...product,
+      id: product.id,
+      name: product.name,
+      genericName: product.genericName,
+      brandName: product.brandName,
+      barcode: product.barcode,
       retailPrice: product.retailPrice?.toString() ?? null,
+      prescriptionClassification: product.prescriptionClassification,
+      category: product.category,
+      ...getProductDisplay(product.taxConfig),
     })),
   };
 });

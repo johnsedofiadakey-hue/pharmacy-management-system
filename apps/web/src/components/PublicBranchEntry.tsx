@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { MapPin, Loader2 } from "lucide-react";
 import { publicListBranches, type PublicBranch } from "@/lib/firebase/callables";
-
-const ORG_ID = process.env.NEXT_PUBLIC_ORGANISATION_ID ?? "";
+import { useTenantBranding } from "@/lib/tenant/useTenantBranding";
+import { showcaseBranches } from "@/lib/showcaseData";
 
 function distanceKm(a: { lat: number; lng: number }, branch: PublicBranch): number | null {
   if (branch.gpsLat == null || branch.gpsLng == null) return null;
@@ -21,6 +21,7 @@ function distanceKm(a: { lat: number; lng: number }, branch: PublicBranch): numb
 }
 
 export function PublicBranchEntry() {
+  const { organisationId, branding, loading: tenantLoading, error: tenantError } = useTenantBranding();
   const [branches, setBranches] = useState<PublicBranch[]>([]);
   const [branchId, setBranchId] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -30,32 +31,7 @@ export function PublicBranchEntry() {
   const [geoPermissionGranted, setGeoPermissionGranted] = useState(false);
   const [geoAttempted, setGeoAttempted] = useState(false);
 
-  useEffect(() => {
-    if (!ORG_ID) return;
-    publicListBranches(ORG_ID)
-      .then((result) => {
-        setBranches(result.data.branches);
-        const savedBranchId = window.localStorage.getItem("selectedBranchId");
-        if (savedBranchId && result.data.branches.some((b) => b.id === savedBranchId)) {
-          setBranchId(savedBranchId);
-        } else {
-          setBranchId(result.data.branches[0]?.id ?? "");
-        }
-      })
-      .catch((err) => {
-        console.error("Failed to load branches:", err);
-        setError("Branches are not available right now. You can still continue to login.");
-      })
-      .finally(() => attemptAutoGeolocation());
-  }, []);
-
-  useEffect(() => {
-    if (branchId) {
-      window.localStorage.setItem("selectedBranchId", branchId);
-    }
-  }, [branchId]);
-
-  function attemptAutoGeolocation() {
+  const attemptAutoGeolocation = useCallback((nextBranches: PublicBranch[]) => {
     if (!navigator.geolocation) {
       setLocationStatus("Location not available in this browser. Select manually.");
       setIsLoading(false);
@@ -71,7 +47,7 @@ export function PublicBranchEntry() {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
         };
-        const ranked = branches
+        const ranked = nextBranches
           .map((branch) => ({ branch, distance: distanceKm(customerLocation, branch) }))
           .filter((item): item is { branch: PublicBranch; distance: number } => item.distance != null)
           .sort((a, b) => a.distance - b.distance);
@@ -95,7 +71,50 @@ export function PublicBranchEntry() {
       },
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 300000 }
     );
-  }
+  }, []);
+
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
+    if (tenantLoading) return;
+
+    if (!organisationId) {
+      setError(tenantError ?? "Branch selection is not configured for this deployment.");
+      setLocationStatus("Branch selection needs deployment configuration.");
+      setIsLoading(false);
+      setGeoAttempted(true);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    publicListBranches(organisationId)
+      .then((result) => {
+        const nextBranches = result.data.branches;
+        setBranches(nextBranches);
+        const savedBranchId = window.localStorage.getItem("selectedBranchId");
+        if (savedBranchId && nextBranches.some((b) => b.id === savedBranchId)) {
+          setBranchId(savedBranchId);
+        } else {
+          setBranchId(nextBranches[0]?.id ?? "");
+        }
+        attemptAutoGeolocation(nextBranches);
+      })
+      .catch((err) => {
+        console.error("Failed to load branches:", err);
+        setBranches(showcaseBranches);
+        setBranchId(showcaseBranches[0]?.id ?? "");
+        setError(null);
+        setLocationStatus("Showing showcase branches for the client demo.");
+        attemptAutoGeolocation(showcaseBranches);
+      });
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [attemptAutoGeolocation, organisationId, tenantError, tenantLoading]);
+
+  useEffect(() => {
+    if (branchId) {
+      window.localStorage.setItem("selectedBranchId", branchId);
+    }
+  }, [branchId]);
 
   function useNearestBranch() {
     if (!navigator.geolocation) {
@@ -146,7 +165,7 @@ export function PublicBranchEntry() {
             <div className="flex items-center gap-2">
               <MapPin size={18} className="text-[color:var(--primary)]" />
               <p className="text-xs font-semibold uppercase tracking-normal text-[color:var(--primary)]">
-                Your pharmacy branch
+                {branding.brandName} branch
               </p>
             </div>
             <h2 className="font-display mt-1 text-xl font-semibold text-[color:var(--secondary)] md:text-2xl">

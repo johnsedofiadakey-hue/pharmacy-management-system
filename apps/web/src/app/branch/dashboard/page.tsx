@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from "react";
 import {
-  listBranches,
   clockIn,
   clockOut,
+  clearShowcaseBranchStock,
   listPendingStockAdjustmentRequests,
   reviewStockAdjustmentRequest,
-  type Branch,
   type StockAdjustmentRequestRow,
 } from "@/lib/firebase/callables";
+import { useBranchWorkspace } from "@/components/branch/BranchWorkspaceContext";
 import { useBranchLive } from "@/lib/firebase/useBranchLive";
 
 // Phase 4 skeleton — branch is manually selected (same follow-up noted in the
@@ -17,19 +17,14 @@ import { useBranchLive } from "@/lib/firebase/useBranchLive";
 // the Firestore users/{uid} mirror doc, not built yet). Not yet exercisable
 // end-to-end without a real Firebase/Supabase project.
 export default function BranchDashboardPage() {
-  const [branches, setBranches] = useState<Branch[]>([]);
-  const [branchId, setBranchId] = useState("");
+  const { branchId, selectedBranch } = useBranchWorkspace();
   const [shiftId, setShiftId] = useState<string | null>(null);
   const [requests, setRequests] = useState<StockAdjustmentRequestRow[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [clearingShowcase, setClearingShowcase] = useState(false);
 
   const live = useBranchLive(branchId || null);
-
-  useEffect(() => {
-    listBranches()
-      .then((r) => setBranches(r.data.branches))
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load branches."));
-  }, []);
 
   async function refreshRequests() {
     if (!branchId) return;
@@ -42,6 +37,7 @@ export default function BranchDashboardPage() {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refreshRequests();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [branchId]);
@@ -77,31 +73,39 @@ export default function BranchDashboardPage() {
     }
   }
 
+  async function handleClearShowcaseStock() {
+    if (!branchId) return;
+    setClearingShowcase(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const result = await clearShowcaseBranchStock(branchId);
+      setMessage(
+        result.data.clearedBatches > 0
+          ? `Cleared ${result.data.clearedUnits} showcase units across ${result.data.clearedBatches} batches.`
+          : "No showcase stock was found at this branch."
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to clear showcase stock.");
+    } finally {
+      setClearingShowcase(false);
+    }
+  }
+
   return (
     <main className="page-wrap py-8">
       <div className="mb-6">
         <p className="text-sm font-semibold uppercase text-[color:var(--primary)]">Branch Workspace</p>
         <h1 className="mt-1 text-3xl font-semibold text-[color:var(--secondary)]">Branch dashboard</h1>
         <p className="mt-2 max-w-2xl text-sm text-[color:var(--muted)]">
-          Live sales, staffing, and approvals for the selected branch.
+          Live sales, staffing, and approvals for {selectedBranch?.name ?? "the active branch"}.
         </p>
       </div>
 
       {error && <p className="mb-4 rounded bg-red-50 p-3 text-sm text-[color:var(--danger)]">{error}</p>}
+      {message && <p className="mb-4 rounded bg-emerald-50 p-3 text-sm text-emerald-700">{message}</p>}
 
       <div className="mb-6 flex flex-wrap items-center gap-3">
-        <select
-          className="field px-3 py-2"
-          value={branchId}
-          onChange={(e) => setBranchId(e.target.value)}
-        >
-          <option value="">Select branch...</option>
-          {branches.map((b) => (
-            <option key={b.id} value={b.id}>
-              {b.name}
-            </option>
-          ))}
-        </select>
         {!shiftId ? (
           <button onClick={handleClockIn} disabled={!branchId} className="btn-secondary px-4 py-2">
             Clock in
@@ -115,6 +119,23 @@ export default function BranchDashboardPage() {
 
       {branchId && (
         <>
+          <section className="clinical-card mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl p-4">
+            <div>
+              <h2 className="font-semibold text-[color:var(--secondary)]">Showcase data</h2>
+              <p className="mt-1 text-sm text-[color:var(--muted)]">
+                Remove seeded demo stock from {selectedBranch?.name ?? "this branch"} without touching real products or sales.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleClearShowcaseStock}
+              disabled={clearingShowcase}
+              className="btn-secondary px-4 py-2 text-sm text-[color:var(--danger)] disabled:opacity-50"
+            >
+              {clearingShowcase ? "Clearing..." : "Clear showcase stock"}
+            </button>
+          </section>
+
           <div className="mb-8 grid gap-3 sm:grid-cols-3">
             <div className="stat-card">
               <div className="stat-card-label">Today&apos;s sales</div>

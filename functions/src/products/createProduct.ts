@@ -54,6 +54,13 @@ export const createProduct = onCall(async (request) => {
   }
   const input = parsed.data;
 
+  if (input.categoryId) {
+    const category = await prisma.category.findUnique({ where: { id: input.categoryId } });
+    if (!category || category.organisationId !== caller.organisationId) {
+      throw new HttpsError("not-found", "Category not found in this organisation.");
+    }
+  }
+
   const product = await prisma.product.create({
     data: {
       organisationId: caller.organisationId,

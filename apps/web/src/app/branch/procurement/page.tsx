@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import {
-  listBranches,
   listProducts,
   listSuppliers,
   createSupplier,
@@ -11,20 +10,19 @@ import {
   listPurchaseOrders,
   receiveGoods,
   getPurchaseSuggestions,
-  type Branch,
   type Product,
   type Supplier,
   type PurchaseOrder,
   type PurchaseSuggestion,
 } from "@/lib/firebase/callables";
+import { useBranchWorkspace } from "@/components/branch/BranchWorkspaceContext";
 
 // Phase 6 skeleton — receiving always uses the full ordered quantity in one
 // call (no partial-receipt or per-line batch-number UI yet, though the
 // Cloud Function supports both). Branch selection is manual, same follow-up
 // noted in Phases 3-5.
 export default function ProcurementPage() {
-  const [branches, setBranches] = useState<Branch[]>([]);
-  const [branchId, setBranchId] = useState("");
+  const { branchId, selectedBranch } = useBranchWorkspace();
   const [products, setProducts] = useState<Product[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [suggestions, setSuggestions] = useState<PurchaseSuggestion[]>([]);
@@ -38,9 +36,6 @@ export default function ProcurementPage() {
   const [poUnitCost, setPoUnitCost] = useState("0");
 
   useEffect(() => {
-    listBranches()
-      .then((r) => setBranches(r.data.branches))
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load branches."));
     listProducts()
       .then((r) => setProducts(r.data.products))
       .catch(() => undefined);
@@ -64,6 +59,7 @@ export default function ProcurementPage() {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [branchId]);
@@ -130,24 +126,11 @@ export default function ProcurementPage() {
         <p className="text-sm font-semibold uppercase text-[color:var(--primary)]">Branch Workspace</p>
         <h1 className="mt-1 text-3xl font-semibold text-[color:var(--secondary)]">Procurement</h1>
         <p className="mt-2 max-w-2xl text-sm text-[color:var(--muted)]">
-          Manage suppliers, raise purchase orders, and receive incoming stock.
+          Manage suppliers, raise purchase orders, and receive stock for {selectedBranch?.name ?? "the active branch"}.
         </p>
       </div>
 
       {error && <p className="mb-4 rounded bg-red-50 p-3 text-sm text-[color:var(--danger)]">{error}</p>}
-
-      <select
-        className="field mb-6 px-3 py-2"
-        value={branchId}
-        onChange={(e) => setBranchId(e.target.value)}
-      >
-        <option value="">Select branch...</option>
-        {branches.map((b) => (
-          <option key={b.id} value={b.id}>
-            {b.name}
-          </option>
-        ))}
-      </select>
 
       <form onSubmit={handleCreateSupplier} className="clinical-card mb-6 flex flex-wrap gap-2 rounded-xl p-4">
         <h2 className="w-full font-semibold text-[color:var(--secondary)]">Add supplier</h2>

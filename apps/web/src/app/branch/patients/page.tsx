@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import {
-  listBranches,
   findCustomerByPhone,
   getPatientRecord,
   recordVitals,
@@ -10,11 +9,11 @@ import {
   createCarePlan,
   completeCarePlanFollowup,
   listUpcomingFollowups,
-  type Branch,
   type CustomerRow,
   type PatientRecord,
   type UpcomingFollowup,
 } from "@/lib/firebase/callables";
+import { useBranchWorkspace } from "@/components/branch/BranchWorkspaceContext";
 
 // Phase 8 skeleton — clinical records are org-wide (not branch-filtered),
 // consistent with BLUEPRINT.md's continuity-of-care decision; branchId is
@@ -23,8 +22,7 @@ import {
 // customer-facing "patient portal" view needs customer authentication, which
 // doesn't exist yet (Phase 9).
 export default function PatientCarePage() {
-  const [branches, setBranches] = useState<Branch[]>([]);
-  const [branchId, setBranchId] = useState("");
+  const { branchId, selectedBranch } = useBranchWorkspace();
   const [phone, setPhone] = useState("");
   const [customer, setCustomer] = useState<CustomerRow | null>(null);
   const [record, setRecord] = useState<PatientRecord | null>(null);
@@ -37,9 +35,6 @@ export default function PatientCarePage() {
   const [carePlan, setCarePlan] = useState({ condition: "", goals: "", firstFollowupDate: "" });
 
   useEffect(() => {
-    listBranches()
-      .then((r) => setBranches(r.data.branches))
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load branches."));
     listUpcomingFollowups()
       .then((r) => setUpcoming(r.data.followups))
       .catch(() => undefined);
@@ -141,7 +136,7 @@ export default function PatientCarePage() {
         <p className="text-sm font-semibold uppercase text-[color:var(--primary)]">Branch Workspace</p>
         <h1 className="mt-1 text-3xl font-semibold text-[color:var(--secondary)]">Patient care</h1>
         <p className="mt-2 max-w-2xl text-sm text-[color:var(--muted)]">
-          Look up a customer, record vitals and consultations, and manage care plans and follow-ups.
+          Look up a customer, record care at {selectedBranch?.name ?? "the active branch"}, and manage org-wide follow-ups.
         </p>
       </div>
 
@@ -169,19 +164,6 @@ export default function PatientCarePage() {
           </ul>
         </div>
       )}
-
-      <select
-        className="field mb-4 px-3 py-2"
-        value={branchId}
-        onChange={(e) => setBranchId(e.target.value)}
-      >
-        <option value="">Acting at branch...</option>
-        {branches.map((b) => (
-          <option key={b.id} value={b.id}>
-            {b.name}
-          </option>
-        ))}
-      </select>
 
       <form onSubmit={handleSearch} className="mb-6 flex gap-2">
         <input

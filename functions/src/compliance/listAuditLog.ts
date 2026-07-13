@@ -26,5 +26,15 @@ export const listAuditLog = onCall(async (request) => {
     take: 200,
   });
 
-  return { entries };
+  return {
+    entries: entries.map((entry) => ({
+      id: entry.id,
+      createdAt: entry.createdAt.toISOString(),
+      action: entry.action,
+      resourceType: entry.resourceType,
+      resourceId: entry.resourceId,
+      user: entry.user ? { name: entry.user.name } : null,
+      branch: entry.branch ? { name: entry.branch.name } : null,
+    })),
+  };
 });

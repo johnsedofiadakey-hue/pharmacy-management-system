@@ -18,10 +18,12 @@ import {
   Dumbbell,
   ArrowRight,
 } from "lucide-react";
-import { Logo } from "@/components/Logo";
 import { HeroIllustration } from "@/components/HeroIllustration";
 import { PublicBranchEntry } from "@/components/PublicBranchEntry";
 import { Footer } from "@/components/Footer";
+import { PublicBrandLogo } from "@/components/PublicBrandLogo";
+import { PublicBrandTheme } from "@/components/PublicBrandTheme";
+import { PublicHeroCopy } from "@/components/PublicHeroCopy";
 
 const categoryLinks = [
   "Medicines",
@@ -129,10 +131,11 @@ function ProductGrid({ products }: { products: typeof popularProducts }) {
 export default function Home() {
   return (
     <main className="app-shell">
+      <PublicBrandTheme />
       {/* Icon-led utility bar */}
       <header className="sticky top-0 z-30 border-b border-[color:var(--border)] bg-white/95 backdrop-blur">
         <div className="page-wrap flex flex-wrap items-center gap-3 py-3.5 md:flex-nowrap md:gap-4">
-          <Logo />
+          <PublicBrandLogo />
           <nav className="ml-auto flex items-center gap-5 text-xs font-medium text-[color:var(--secondary)] md:order-3">
             <Link href="/store" className="relative flex flex-col items-center gap-1">
               <ShoppingCart size={20} />
@@ -171,14 +174,7 @@ export default function Home() {
         <div className="hero-grid" />
         <div className="page-wrap relative z-10 grid items-center gap-10 py-10 lg:grid-cols-2 lg:py-16">
           <div>
-            <h1 className="font-display text-4xl font-bold leading-[1.1] text-[color:var(--secondary)] md:text-6xl">
-              Your Health,
-              <br />
-              <span className="text-[color:var(--primary)]">Our Priority</span>
-            </h1>
-            <p className="mt-5 max-w-md text-lg text-[color:var(--muted)]">
-              Trusted medicines, advanced care, delivered from the branch near you.
-            </p>
+            <PublicHeroCopy />
 
             {/* Shop-by-need shortcuts — task-first, for customers who already know what they need */}
             <div className="mt-5 flex flex-wrap gap-2">

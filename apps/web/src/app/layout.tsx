@@ -25,7 +25,7 @@ const satoshi = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Nexus Pharma",
+  title: "Pharmacy Management System",
   description: "Branch-aware pharmacy shopping, delivery, and pharmacist-led care.",
 };
 

@@ -4,9 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
+import { PublicBrandTheme } from "@/components/PublicBrandTheme";
+import { useTenantBranding } from "@/lib/tenant/useTenantBranding";
 
 export default function CustomerLoginPage() {
   const router = useRouter();
+  const { branding } = useTenantBranding();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -29,8 +32,9 @@ export default function CustomerLoginPage() {
 
   return (
     <main className="app-shell flex min-h-screen items-center justify-center p-6">
+      <PublicBrandTheme />
       <section className="clinical-card w-full max-w-md rounded-2xl p-6">
-        <p className="text-sm font-semibold uppercase text-[color:var(--primary)]">Customer portal</p>
+        <p className="text-sm font-semibold uppercase text-[color:var(--primary)]">{branding.brandName} portal</p>
       <h1 className="font-display mt-2 text-3xl font-semibold text-[color:var(--secondary)]">Sign in</h1>
       <p className="mt-2 text-sm text-[color:var(--muted)]">
         View orders, delivery status, loyalty, and care follow-ups.

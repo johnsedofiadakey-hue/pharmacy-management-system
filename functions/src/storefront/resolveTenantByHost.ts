@@ -2,6 +2,7 @@ import { HttpsError } from "firebase-functions/v2/https";
 import { onCall } from "../lib/onCall";
 import { z } from "zod";
 import { prisma, OrganisationStatus } from "@pharmacy-os/db";
+import { getPublicBranding } from "../lib/organisationBranding";
 
 const schema = z.object({
   hostname: z
@@ -36,6 +37,7 @@ export const resolveTenantByHost = onCall(async (request) => {
       id: domain.organisation.id,
       name: domain.organisation.name,
       plan: domain.organisation.plan,
+      branding: getPublicBranding(domain.organisation.name, domain.organisation.settings),
     },
     domain: {
       hostname: domain.hostname,

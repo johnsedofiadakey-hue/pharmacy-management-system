@@ -26,6 +26,9 @@ export const assignDeliveryRider = onCall(async (request) => {
   if (!rider || rider.organisationId !== order.organisationId) {
     throw new HttpsError("not-found", "Rider not found in this organisation.");
   }
+  if (!rider.isActive) {
+    throw new HttpsError("failed-precondition", "This rider account is inactive.");
+  }
 
   await requirePermission({
     userId: caller.id,
@@ -34,6 +37,28 @@ export const assignDeliveryRider = onCall(async (request) => {
     resource: PermissionResource.DELIVERIES,
     action: PermissionAction.EDIT,
   });
+
+  const riderGrant = await prisma.userRole.findFirst({
+    where: {
+      userId: rider.id,
+      OR: [{ branchId: order.branchId }, { branchId: null }],
+      role: {
+        rolePermissions: {
+          some: {
+            permission: {
+              resource: PermissionResource.DELIVERIES,
+              action: PermissionAction.VIEW,
+            },
+          },
+        },
+      },
+    },
+    select: { id: true },
+  });
+
+  if (!riderGrant) {
+    throw new HttpsError("failed-precondition", "Selected staff member is not a delivery rider for this branch.");
+  }
 
   const delivery = await prisma.delivery.update({
     where: { orderId },

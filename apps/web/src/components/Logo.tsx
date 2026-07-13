@@ -5,10 +5,14 @@ export function Logo({
   href = "/",
   size = "md",
   light = false,
+  brandName = "NexusPharma",
+  logoUrl,
 }: {
   href?: string;
   size?: "sm" | "md";
   light?: boolean;
+  brandName?: string;
+  logoUrl?: string | null;
 }) {
   const markSize = size === "sm" ? 30 : 36;
   const textClass = size === "sm" ? "text-lg" : "text-xl";
@@ -20,17 +24,22 @@ export function Logo({
         style={{ width: markSize, height: markSize }}
         aria-hidden
       >
-        <svg width={markSize * 0.55} height={markSize * 0.55} viewBox="0 0 24 24" fill="none">
-          <path
-            d="M12 4v16M4 12h16"
-            stroke="white"
-            strokeWidth={3.2}
-            strokeLinecap="round"
-          />
-        </svg>
+        {logoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={logoUrl} alt="" className="size-full rounded-xl object-cover" />
+        ) : (
+          <svg width={markSize * 0.55} height={markSize * 0.55} viewBox="0 0 24 24" fill="none">
+            <path
+              d="M12 4v16M4 12h16"
+              stroke="white"
+              strokeWidth={3.2}
+              strokeLinecap="round"
+            />
+          </svg>
+        )}
       </span>
       <span className={`font-display ${textClass} font-bold ${light ? "text-white" : "text-[color:var(--secondary)]"}`}>
-        Nexus<span className="text-[color:var(--primary)]">Pharma</span>
+        {brandName}
       </span>
     </Link>
   );

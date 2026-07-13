@@ -5,10 +5,14 @@ import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 
+const DEMO_MODE =
+  process.env.NEXT_PUBLIC_DEMO_MODE === "true" ||
+  process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === "true";
+
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("admin@pharmacy.com");
-  const [password, setPassword] = useState("admin123");
+  const [email, setEmail] = useState(DEMO_MODE ? "super_admin@nexuspharma.demo" : "");
+  const [password, setPassword] = useState(DEMO_MODE ? "Demo@12345" : "");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -32,8 +36,13 @@ export default function LoginPage() {
         <p className="text-sm font-semibold uppercase text-[color:var(--primary)]">Secure staff access</p>
       <h1 className="font-display mt-2 text-3xl font-semibold text-[color:var(--secondary)]">Sign in</h1>
       <p className="mt-2 text-sm text-[color:var(--muted)]">
-        Demo access for branch operations, pharmacist tools, POS, and management dashboards.
+        Access branch operations, pharmacist tools, POS, and management dashboards.
       </p>
+      {DEMO_MODE && (
+        <p className="mt-3 rounded-lg bg-[color:var(--primary-soft)] p-3 text-sm text-[color:var(--primary-strong)]">
+          Demo mode: use the prefilled Super Admin account or any seeded branch account.
+        </p>
+      )}
       <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-3">
         <input
           required

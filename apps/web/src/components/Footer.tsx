@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ShieldCheck, Truck, RotateCcw, Headphones } from "lucide-react";
+import { useTenantBranding } from "@/lib/tenant/useTenantBranding";
 
 const trustItems = [
   { icon: ShieldCheck, title: "Secure", copy: "100% safe & encrypted" },
@@ -11,6 +12,8 @@ const trustItems = [
 ];
 
 export function Footer() {
+  const { branding } = useTenantBranding();
+
   return (
     <footer className="border-t border-[color:var(--border)] bg-white">
       {/* Trust strip */}
@@ -30,7 +33,10 @@ export function Footer() {
 
       {/* Copyright and links */}
       <div className="page-wrap flex flex-col items-center justify-between gap-4 border-t border-[color:var(--border)] py-6 text-xs text-[color:var(--muted)] sm:flex-row">
-        <span>© {new Date().getFullYear()} Nexus Pharma. Licensed pharmacy operator in Ghana.</span>
+        <span>
+          © {new Date().getFullYear()} {branding.brandName}.{" "}
+          {branding.footerText || "Licensed pharmacy operator in Ghana."}
+        </span>
         <div className="flex flex-wrap items-center gap-4">
           <Link href="/login" className="underline hover:text-[color:var(--secondary)]">
             Staff access

@@ -5,6 +5,7 @@ import {
   listBranches,
   listProducts,
   getSuspiciousActivityAlerts,
+  listBranchStock,
   listDrugRecalls,
   initiateDrugRecall,
   resolveDrugRecall,
@@ -12,6 +13,7 @@ import {
   reportAdverseReaction,
   listAuditLog,
   type Branch,
+  type BranchStockRow,
   type Product,
   type SuspiciousActivityAlert,
   type DrugRecallRow,
@@ -26,6 +28,8 @@ export default function CompliancePage() {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [branchId, setBranchId] = useState("");
+  const [recallBranchId, setRecallBranchId] = useState("");
+  const [recallBatches, setRecallBatches] = useState<BranchStockRow[]>([]);
   const [alerts, setAlerts] = useState<SuspiciousActivityAlert[]>([]);
   const [recalls, setRecalls] = useState<DrugRecallRow[]>([]);
   const [reactions, setReactions] = useState<AdverseReactionReportRow[]>([]);
@@ -42,6 +46,15 @@ export default function CompliancePage() {
     refreshReactions();
     refreshAuditLog();
   }, []);
+
+  useEffect(() => {
+    if (!recallBranchId) {
+      return;
+    }
+    listBranchStock(recallBranchId)
+      .then((r) => setRecallBatches(r.data.stock))
+      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load branch batches."));
+  }, [recallBranchId]);
 
   useEffect(() => {
     if (!branchId) return;
@@ -157,18 +170,42 @@ export default function CompliancePage() {
 
       <section className="clinical-card mb-6 rounded-xl p-5">
         <h2 className="mb-3 font-semibold text-[color:var(--secondary)]">Drug recalls</h2>
-        <form onSubmit={handleInitiateRecall} className="mb-4 flex flex-wrap gap-2">
-          <input
+        <form onSubmit={handleInitiateRecall} className="mb-4 grid gap-2 md:grid-cols-[220px_1fr_1fr_auto]">
+          <select
             required
-            placeholder="Batch ID"
+            className="field px-3 py-2 text-sm"
+            value={recallBranchId}
+            onChange={(e) => {
+              setRecallBranchId(e.target.value);
+              setRecallBatches([]);
+              setRecallForm((current) => ({ ...current, batchId: "" }));
+            }}
+          >
+            <option value="">Branch...</option>
+            {branches.map((branch) => (
+              <option key={branch.id} value={branch.id}>
+                {branch.name}
+              </option>
+            ))}
+          </select>
+          <select
+            required
             className="field px-3 py-2 text-sm"
             value={recallForm.batchId}
             onChange={(e) => setRecallForm({ ...recallForm, batchId: e.target.value })}
-          />
+            disabled={!recallBranchId || recallBatches.length === 0}
+          >
+            <option value="">Product batch...</option>
+            {recallBatches.map((stock) => (
+              <option key={stock.batchId} value={stock.batchId}>
+                {stock.batch.product.name} — {stock.batch.batchNumber} ({stock.quantityOnHand} on hand)
+              </option>
+            ))}
+          </select>
           <input
             required
             placeholder="Reason"
-            className="field flex-1 px-3 py-2 text-sm"
+            className="field px-3 py-2 text-sm"
             value={recallForm.reason}
             onChange={(e) => setRecallForm({ ...recallForm, reason: e.target.value })}
           />

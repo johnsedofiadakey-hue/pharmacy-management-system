@@ -27,6 +27,7 @@ import {
   type QueuedSale,
 } from "@/lib/offlineSalesQueue";
 import { useStoredCart } from "@/lib/useStoredCart";
+import { STAFF_BRANCH_STORAGE_KEY } from "@/components/branch/BranchWorkspaceContext";
 import { Alert, Badge, Button, EmptyState, Input, Select } from "@/components/ui";
 import { Receipt } from "@/components/Receipt";
 
@@ -73,6 +74,16 @@ export default function PosPage() {
         if (activeTill) {
           setTillSession(activeTill);
           setBranchId(activeTill.branchId);
+          window.localStorage.setItem(STAFF_BRANCH_STORAGE_KEY, activeTill.branchId);
+        } else {
+          const savedBranchId = window.localStorage.getItem(STAFF_BRANCH_STORAGE_KEY);
+          const nextBranchId =
+            savedBranchId && branchResult.data.branches.some((branch) => branch.id === savedBranchId)
+              ? savedBranchId
+              : branchResult.data.branches.find((branch) => branch.isActive)?.id ??
+                branchResult.data.branches[0]?.id ??
+                "";
+          setBranchId(nextBranchId);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load data.");
@@ -174,6 +185,7 @@ export default function PosPage() {
     try {
       const result = await openTill({ branchId, openingFloat: Number(openingFloat) });
       setTillSession(result.data.tillSession);
+      window.localStorage.setItem(STAFF_BRANCH_STORAGE_KEY, result.data.tillSession.branchId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to open till.");
     } finally {
@@ -252,7 +264,12 @@ export default function PosPage() {
             <Select
               className="min-w-44"
               value={branchId}
-              onChange={(e) => setBranchId(e.target.value)}
+              onChange={(e) => {
+                setBranchId(e.target.value);
+                if (e.target.value) {
+                  window.localStorage.setItem(STAFF_BRANCH_STORAGE_KEY, e.target.value);
+                }
+              }}
               disabled={!!tillSession || rehydrating}
               aria-label="Branch"
             >

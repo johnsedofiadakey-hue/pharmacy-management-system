@@ -9,6 +9,7 @@
     "db:generate": "pnpm --filter @pharmacy-os/db generate",
     "db:migrate": "pnpm --filter @pharmacy-os/db migrate",
     "db:seed": "pnpm --filter @pharmacy-os/db seed",
+    "db:seed:showcase": "corepack pnpm --filter @pharmacy-os/db seed:showcase",
     "functions:build": "pnpm --filter functions build",
     "functions:serve": "pnpm --filter functions serve"
   },

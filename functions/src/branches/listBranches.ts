@@ -18,10 +18,35 @@ export const listBranches = onCall(async (request) => {
     action: PermissionAction.VIEW,
   });
 
+  const hasOrgWideBranchView = await prisma.userRole.findFirst({
+    where: {
+      userId: caller.id,
+      branchId: null,
+      role: {
+        rolePermissions: {
+          some: { permission: { resource: PermissionResource.BRANCHES, action: PermissionAction.VIEW } },
+        },
+      },
+    },
+    select: { id: true },
+  });
+
   const branches = await prisma.branch.findMany({
-    where: { organisationId: caller.organisationId },
+    where: {
+      organisationId: caller.organisationId,
+      ...(hasOrgWideBranchView
+        ? {}
+        : {
+            userRoles: { some: { userId: caller.id } },
+          }),
+    },
     orderBy: { name: "asc" },
   });
 
-  return { branches };
+  return {
+    branches: branches.map((branch) => ({
+      ...branch,
+      isShowcase: branch.code.startsWith("SHOW-") || branch.code.startsWith("DEMO-"),
+    })),
+  };
 });

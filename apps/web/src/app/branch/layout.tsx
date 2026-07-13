@@ -1,7 +1,9 @@
 "use client";
 
 import { RequireAuth } from "@/components/RequireAuth";
+import { BranchContextBar, BranchWorkspaceProvider } from "@/components/branch/BranchWorkspaceContext";
 import { PortalShell } from "@/components/portal/PortalShell";
+import { useTenantBranding } from "@/lib/tenant/useTenantBranding";
 import {
   LayoutDashboard,
   Package,
@@ -28,16 +30,21 @@ const sections = [
 ];
 
 export default function BranchLayout({ children }: { children: React.ReactNode }) {
+  const { branding } = useTenantBranding();
+
   return (
     <RequireAuth>
-      <PortalShell
-        eyebrow="Branch Workspace"
-        title="Nexus Pharma"
-        sections={sections}
-        crossLink={{ href: "/pos", label: "Open POS" }}
-      >
-        {children}
-      </PortalShell>
+      <BranchWorkspaceProvider>
+        <PortalShell
+          eyebrow="Branch Workspace"
+          title={branding.brandName}
+          sections={sections}
+          crossLink={{ href: "/pos", label: "Open POS" }}
+        >
+          <BranchContextBar />
+          {children}
+        </PortalShell>
+      </BranchWorkspaceProvider>
     </RequireAuth>
   );
 }

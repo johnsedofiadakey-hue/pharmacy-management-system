@@ -11,6 +11,7 @@
     "migrate:deploy": "prisma migrate deploy",
     "seed": "prisma db execute --file prisma/system_seed.sql --schema prisma/schema.prisma",
     "seed:demo": "tsx prisma/seed-demo.ts",
+    "seed:showcase": "tsx prisma/seed-showcase.ts",
     "studio": "prisma studio"
   },
   "dependencies": {

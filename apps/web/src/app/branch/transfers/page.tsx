@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import {
-  listBranches,
-  listBranchStock,
+  listTransferSourceBranches,
+  listTransferSourceStock,
   requestTransfer,
   approveTransfer,
   rejectTransfer,
@@ -15,13 +15,13 @@ import {
   type BranchStockRow,
   type Transfer,
 } from "@/lib/firebase/callables";
+import { useBranchWorkspace } from "@/components/branch/BranchWorkspaceContext";
 
 // Phase 5 skeleton — dispatch/receive always use the full requested/sent
-// quantity (no partial-quantity UI yet, though the Cloud Functions support
-// it). Branch selection is manual, same follow-up as Phases 3/4.
+// quantity (no partial-quantity UI yet, though the Cloud Functions support it).
 export default function TransfersPage() {
-  const [branches, setBranches] = useState<Branch[]>([]);
-  const [branchId, setBranchId] = useState("");
+  const { branchId, selectedBranch } = useBranchWorkspace();
+  const [sourceBranches, setSourceBranches] = useState<Branch[]>([]);
   const [sourceBranchId, setSourceBranchId] = useState("");
   const [sourceStock, setSourceStock] = useState<BranchStockRow[]>([]);
   const [selectedStockId, setSelectedStockId] = useState("");
@@ -29,12 +29,6 @@ export default function TransfersPage() {
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    listBranches()
-      .then((r) => setBranches(r.data.branches))
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load branches."));
-  }, []);
 
   async function refreshTransfers() {
     if (!branchId) return;
@@ -47,19 +41,31 @@ export default function TransfersPage() {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refreshTransfers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [branchId]);
 
   useEffect(() => {
-    if (!sourceBranchId) {
-      setSourceStock([]);
+    if (!branchId) return;
+    listTransferSourceBranches(branchId)
+      .then((result) => {
+        setSourceBranches(result.data.branches);
+        setSourceBranchId((current) =>
+          result.data.branches.some((branch) => branch.id === current) ? current : ""
+        );
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load source branches."));
+  }, [branchId]);
+
+  useEffect(() => {
+    if (!sourceBranchId || !branchId) {
       return;
     }
-    listBranchStock(sourceBranchId)
+    listTransferSourceStock(sourceBranchId, branchId)
       .then((r) => setSourceStock(r.data.stock))
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load source stock."));
-  }, [sourceBranchId]);
+  }, [sourceBranchId, branchId]);
 
   async function handleRequest(event: React.FormEvent) {
     event.preventDefault();
@@ -120,24 +126,11 @@ export default function TransfersPage() {
         <p className="text-sm font-semibold uppercase text-[color:var(--primary)]">Branch Workspace</p>
         <h1 className="mt-1 text-3xl font-semibold text-[color:var(--secondary)]">Transfers</h1>
         <p className="mt-2 max-w-2xl text-sm text-[color:var(--muted)]">
-          Request stock from other branches and track transfers in flight.
+          Request stock into {selectedBranch?.name ?? "the active branch"} and track transfers in flight.
         </p>
       </div>
 
       {error && <p className="mb-4 rounded bg-red-50 p-3 text-sm text-[color:var(--danger)]">{error}</p>}
-
-      <select
-        className="field mb-6 px-3 py-2"
-        value={branchId}
-        onChange={(e) => setBranchId(e.target.value)}
-      >
-        <option value="">Acting as branch...</option>
-        {branches.map((b) => (
-          <option key={b.id} value={b.id}>
-            {b.name}
-          </option>
-        ))}
-      </select>
 
       {branchId && (
         <>
@@ -146,10 +139,14 @@ export default function TransfersPage() {
             <select
               className="field px-3 py-2"
               value={sourceBranchId}
-              onChange={(e) => setSourceBranchId(e.target.value)}
+              onChange={(e) => {
+                setSourceBranchId(e.target.value);
+                setSourceStock([]);
+                setSelectedStockId("");
+              }}
             >
               <option value="">Source branch...</option>
-              {branches.filter((b) => b.id !== branchId).map((b) => (
+              {sourceBranches.map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.name}
                 </option>

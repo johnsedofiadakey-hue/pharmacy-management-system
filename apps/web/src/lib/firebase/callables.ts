@@ -25,10 +25,60 @@ export type Branch = {
   gpsLat: number | null;
   gpsLng: number | null;
   isActive: boolean;
+  isShowcase?: boolean;
   clinicalCareEnabled?: boolean;
 };
 
 export type Role = { id: string; name: string; description?: string | null };
+
+export type StaffDirectoryUser = {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  primaryBranchId: string | null;
+  primaryBranch?: { id: string; name: string } | null;
+  isActive?: boolean;
+  createdAt?: string;
+  userRoles?: { id?: string; branchId: string | null; branch?: { id: string; name: string } | null; role: { id?: string; name: string } }[];
+};
+
+export type OrganisationBranding = {
+  brandName: string;
+  logoUrl: string | null;
+  primaryColor: string;
+  supportPhone: string | null;
+  supportEmail: string | null;
+  storefrontHeadline: string;
+  storefrontSubheadline: string;
+  homepageAnnouncement: string | null;
+  footerText: string | null;
+};
+
+export type OrganisationDomain = {
+  id: string;
+  hostname: string;
+  isPrimary: boolean;
+  isActive: boolean;
+};
+
+export type OrganisationSettings = {
+  id: string;
+  name: string;
+  plan: string;
+  status: string;
+  branding: OrganisationBranding;
+  domains?: OrganisationDomain[];
+};
+
+export type Category = {
+  id: string;
+  organisationId: string;
+  name: string;
+  parentCategoryId: string | null;
+  parentCategory?: { id: string; name: string } | null;
+  _count?: { products: number };
+};
 
 export type Product = {
   id: string;
@@ -39,7 +89,13 @@ export type Product = {
   barcode: string | null;
   sku: string | null;
   categoryId: string | null;
+  category?: { id: string; name: string } | null;
+  storefrontImageUrl?: string | null;
+  storefrontCategoryName?: string | null;
+  isShowcase?: boolean;
   prescriptionClassification: PrescriptionClassification;
+  costPrice: string | null;
+  wholesalePrice: string | null;
   retailPrice: string | null;
   minSellingPrice: string | null;
   reorderLevel: number | null;
@@ -54,6 +110,9 @@ export type PublicProduct = {
   barcode: string | null;
   retailPrice: string | null;
   prescriptionClassification: PrescriptionClassification;
+  category?: { id: string; name: string } | null;
+  storefrontImageUrl?: string | null;
+  storefrontCategoryName?: string | null;
 };
 
 export type PublicBranch = {
@@ -349,6 +408,7 @@ export type AuditLogEntry = {
   createdAt: string;
   action: string;
   resourceType: string;
+  resourceId?: string | null;
   user?: { name: string } | null;
   branch?: { name: string } | null;
 };
@@ -379,6 +439,10 @@ export function listRoles() {
   return call<Record<string, never>, { roles: Role[] }>("listRoles", {});
 }
 
+export function assignUserRole(input: { targetUserId: string; roleId: string; branchId?: string | null }) {
+  return call<typeof input, { userRole: { id: string } }>("assignUserRole", input);
+}
+
 export function inviteStaffMember(input: {
   name: string;
   email: string;
@@ -388,10 +452,103 @@ export function inviteStaffMember(input: {
   return call<typeof input, { inviteLink: string }>("inviteStaffMember", input);
 }
 
+export function listStaffMembers() {
+  return call<Record<string, never>, { users: StaffDirectoryUser[] }>("listStaffMembers", {});
+}
+
+export function setStaffActive(input: { targetUserId: string; isActive: boolean }) {
+  return call<typeof input, { user: StaffDirectoryUser }>("setStaffActive", input);
+}
+
+export function listBranchDeliveryRiders(branchId: string) {
+  return call<{ branchId: string }, { riders: StaffDirectoryUser[] }>("listBranchDeliveryRiders", { branchId });
+}
+
+// ---------- Organisation settings ----------
+
+export function getOrganisationSettings() {
+  return call<Record<string, never>, { organisation: OrganisationSettings }>("getOrganisationSettings", {});
+}
+
+export function updateOrganisationSettings(input: {
+  name?: string;
+  branding?: Partial<OrganisationBranding>;
+}) {
+  return call<typeof input, { organisation: OrganisationSettings }>("updateOrganisationSettings", input);
+}
+
 // ---------- Products & inventory ----------
 
-export function listProducts() {
-  return call<Record<string, never>, { products: Product[] }>("listProducts", {});
+export function listProducts(input: { includeInactive?: boolean } = {}) {
+  return call<typeof input, { products: Product[] }>("listProducts", input);
+}
+
+export function listCategories() {
+  return call<Record<string, never>, { categories: Category[] }>("listCategories", {});
+}
+
+export function createCategory(input: { name: string; parentCategoryId?: string | null }) {
+  return call<typeof input, { category: Category }>("createCategory", input);
+}
+
+export function createProduct(input: {
+  name: string;
+  genericName?: string;
+  brandName?: string;
+  barcode?: string;
+  sku?: string;
+  prescriptionClassification?: PrescriptionClassification;
+  reorderLevel?: number;
+  retailPrice?: number;
+  minSellingPrice?: number;
+  costPrice?: number;
+  categoryId?: string;
+}) {
+  return call<typeof input, { product: Product }>("createProduct", input);
+}
+
+export function updateProductPricing(input: {
+  productId: string;
+  costPrice?: number;
+  wholesalePrice?: number;
+  retailPrice?: number;
+  minSellingPrice?: number;
+}) {
+  return call<typeof input, { product: Product }>("updateProductPricing", input);
+}
+
+export function updateProductMerchandising(input: {
+  productId: string;
+  genericName?: string | null;
+  brandName?: string | null;
+  categoryId?: string | null;
+  storefrontImageUrl?: string | null;
+  storefrontCategoryName?: string | null;
+}) {
+  return call<typeof input, { product: Product }>("updateProductMerchandising", input);
+}
+
+export function setProductActive(input: { productId: string; isActive: boolean }) {
+  return call<typeof input, { product: Product }>("setProductActive", input);
+}
+
+export function receiveStock(input: {
+  branchId: string;
+  productId: string;
+  batchNumber: string;
+  quantity: number;
+  expiryDate?: string;
+  manufacturingDate?: string;
+  costPriceAtReceipt?: number;
+}) {
+  return call<typeof input, { movement: unknown }>("receiveStock", input);
+}
+
+export function clearShowcaseBranchStock(branchId: string) {
+  return call<{ branchId: string }, { clearedBatches: number; clearedUnits: number }>(
+    "clearShowcaseBranchStock",
+    { branchId }
+  );
 }
 
 export function listBranchStock(branchId: string) {
@@ -509,6 +666,17 @@ export function receiveTransfer(transferId: string, items: { transferItemId: str
 
 export function listTransfers(branchId: string) {
   return call<{ branchId: string }, { transfers: Transfer[] }>("listTransfers", { branchId });
+}
+
+export function listTransferSourceBranches(toBranchId: string) {
+  return call<{ toBranchId: string }, { branches: Branch[] }>("listTransferSourceBranches", { toBranchId });
+}
+
+export function listTransferSourceStock(sourceBranchId: string, toBranchId: string) {
+  return call<{ sourceBranchId: string; toBranchId: string }, { stock: BranchStockRow[] }>(
+    "listTransferSourceStock",
+    { sourceBranchId, toBranchId }
+  );
 }
 
 // ---------- Suppliers & procurement ----------
@@ -652,6 +820,23 @@ export function publicListProducts(organisationId: string) {
 
 export function publicListBranches(organisationId: string) {
   return call<{ organisationId: string }, { branches: PublicBranch[] }>("publicListBranches", { organisationId });
+}
+
+export function resolveTenantByHost(hostname: string) {
+  return call<
+    { hostname: string },
+    {
+      organisation: { id: string; name: string; plan: string; branding: OrganisationBranding };
+      domain: { hostname: string; isPrimary: boolean };
+    }
+  >("resolveTenantByHost", { hostname });
+}
+
+export function publicGetOrganisationBrand(organisationId: string) {
+  return call<
+    { organisationId: string },
+    { organisation: { id: string; name: string; plan: string; branding: OrganisationBranding } }
+  >("publicGetOrganisationBrand", { organisationId });
 }
 
 export function linkCustomerAccount(input: {

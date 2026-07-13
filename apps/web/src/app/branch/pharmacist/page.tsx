@@ -2,15 +2,14 @@
 
 import { useEffect, useState } from "react";
 import {
-  listBranches,
   listProducts,
   createPrescription,
   listPrescriptions,
   reviewPrescription,
-  type Branch,
   type Product,
   type PrescriptionRow,
 } from "@/lib/firebase/callables";
+import { useBranchWorkspace } from "@/components/branch/BranchWorkspaceContext";
 
 type ItemDraft = { requestedText: string; quantity: string };
 type ReviewDraft = Record<string, { productId: string; availabilityStatus: string }>;
@@ -20,8 +19,7 @@ type ReviewDraft = Record<string, { productId: string; availabilityStatus: strin
 // per line before approving/rejecting/requesting clarification. Branch
 // selection is manual, same follow-up as earlier phases.
 export default function PharmacistWorkspacePage() {
-  const [branches, setBranches] = useState<Branch[]>([]);
-  const [branchId, setBranchId] = useState("");
+  const { branchId, selectedBranch } = useBranchWorkspace();
   const [products, setProducts] = useState<Product[]>([]);
   const [prescriptions, setPrescriptions] = useState<PrescriptionRow[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -31,9 +29,6 @@ export default function PharmacistWorkspacePage() {
   const [reviewDrafts, setReviewDrafts] = useState<Record<string, ReviewDraft>>({});
 
   useEffect(() => {
-    listBranches()
-      .then((r) => setBranches(r.data.branches))
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load branches."));
     listProducts()
       .then((r) => setProducts(r.data.products))
       .catch(() => undefined);
@@ -50,6 +45,7 @@ export default function PharmacistWorkspacePage() {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [branchId]);
@@ -121,24 +117,11 @@ export default function PharmacistWorkspacePage() {
         <p className="text-sm font-semibold uppercase text-[color:var(--primary)]">Branch Workspace</p>
         <h1 className="mt-1 text-3xl font-semibold text-[color:var(--secondary)]">Pharmacist workspace</h1>
         <p className="mt-2 max-w-2xl text-sm text-[color:var(--muted)]">
-          Log prescriptions, match products, and approve or reject requests before dispensing.
+          Log and review prescriptions for {selectedBranch?.name ?? "the active branch"} before dispensing.
         </p>
       </div>
 
       {error && <p className="mb-4 rounded bg-red-50 p-3 text-sm text-[color:var(--danger)]">{error}</p>}
-
-      <select
-        className="field mb-6 px-3 py-2"
-        value={branchId}
-        onChange={(e) => setBranchId(e.target.value)}
-      >
-        <option value="">Select branch...</option>
-        {branches.map((b) => (
-          <option key={b.id} value={b.id}>
-            {b.name}
-          </option>
-        ))}
-      </select>
 
       {branchId && (
         <>
